@@ -89,9 +89,7 @@ border:1px solid #c9eafa
 background:#16875d
 }
 
-.hide{
-display:none
-}
+.hide{display:none}
 
 .muted{
 font-size:13px;
@@ -146,17 +144,10 @@ font-size:16px;
 background:#fff
 }
 
-textarea{
-min-height:85px
-}
+textarea{min-height:85px}
 
-h2{
-margin:7px 0 12px
-}
-
-h3{
-margin-top:23px
-}
+h2{margin:7px 0 12px}
+h3{margin-top:23px}
 
 .item{
 padding:10px 0;
@@ -183,9 +174,7 @@ font-size:24px;
 font-weight:800
 }
 
-.click{
-cursor:pointer
-}
+.click{cursor:pointer}
 
 .prepared{
 background:#f7fcff;
@@ -224,37 +213,22 @@ margin:12px 0
 
 <header class="top">
 <b>YPF TRES SOLES FULL</b>
-<div id="hello" style="margin-top:5px;opacity:.9">
-Control de stock
-</div>
+<div id="hello" style="margin-top:5px;opacity:.9">Control de stock</div>
 </header>
 
 <main class="wrap">
 
 <section id="auth" class="card">
-
 <h2>Ingresar</h2>
-
 <input id="email" type="email" placeholder="Email">
-
 <input id="pass" type="password" placeholder="Contraseña">
-
-<button onclick="login()">
-Ingresar
-</button>
-
-<p id="msg" class="muted">
-Cada persona ingresa con su propia cuenta.
-</p>
-
+<button onclick="login()">Ingresar</button>
+<p id="msg" class="muted">Cada persona ingresa con su propia cuenta.</p>
 </section>
 
 <section id="home" class="hide">
-
 <div id="head" class="card"></div>
-
 <div id="work"></div>
-
 </section>
 
 </main>
@@ -269,6 +243,8 @@ const sb=supabase.createClient(
 let me=null;
 let shift=null;
 let products=[];
+let shiftUsage={};
+let closingShift=false;
 let preparedProducts=[];
 
 const $=x=>document.getElementById(x);
@@ -286,13 +262,7 @@ m=>({
 
 const fmt=n=>Number(n||0).toLocaleString('es-AR');
 
-
-/* =========================
-LOGIN
-========================= */
-
 async function login(){
-
 const r=await sb.auth.signInWithPassword({
 email:$('email').value,
 password:$('pass').value
@@ -307,16 +277,9 @@ boot();
 }
 
 async function logout(){
-
 await sb.auth.signOut();
-
 location.reload();
 }
-
-
-/* =========================
-INICIO
-========================= */
 
 async function boot(){
 
@@ -325,7 +288,6 @@ await sb.rpc('close_expired_shifts');
 }catch(e){}
 
 const u=(await sb.auth.getUser()).data.user;
-
 if(!u)return;
 
 $('auth').classList.add('hide');
@@ -359,15 +321,13 @@ renderHead();
 if(me.role==='manager'){
 adminHome();
 }else if(shift){
-renderShift();
+await loadShiftUsage();
 }else{
 employeeHome();
 }
 }
 
-
 async function loadProducts(){
-
 products=(await sb
 .from('products')
 .select('*')
@@ -375,20 +335,13 @@ products=(await sb
 .order('sort_order')).data||[];
 }
 
-
 async function loadPreparedProducts(){
-
 preparedProducts=(await sb
 .from('prepared_products')
 .select('*')
 .eq('active',true)
 .order('sort_order')).data||[];
 }
-
-
-/* =========================
-CABECERA
-========================= */
 
 function renderHead(){
 
@@ -406,17 +359,9 @@ ${admin?`
 
 <div class="nav">
 
-<button onclick="adminHome()">
-Inicio
-</button>
-
-<button class="sec" onclick="adminStock()">
-Stock
-</button>
-
-<button class="sec" onclick="adminTurns()">
-Turnos
-</button>
+<button onclick="adminHome()">Inicio</button>
+<button class="sec" onclick="adminStock()">Stock</button>
+<button class="sec" onclick="adminTurns()">Turnos</button>
 
 </div>
 
@@ -427,16 +372,9 @@ Turnos
 :''
 }`}
 
-<button class="ghost" onclick="logout()">
-Cerrar sesión
-</button>
+<button class="ghost" onclick="logout()">Cerrar sesión</button>
 `;
 }
-
-
-/* =========================
-EMPLEADAS
-========================= */
 
 function employeeHome(){
 
@@ -467,7 +405,6 @@ Abrir turno Tarde
 `;
 }
 
-
 async function openShift(kind){
 
 if(shift){
@@ -490,16 +427,11 @@ return;
 }
 
 shift=r.data;
+shiftUsage={};
 
 renderHead();
 renderShift();
 }
-
-
-/* =========================
-STOCK EMPLEADAS
-NO MUESTRA ELABORADOS
-========================= */
 
 function employeeStock(){
 
@@ -510,29 +442,24 @@ preparedProducts
 );
 
 const manualProducts=products.filter(p=>{
-
 const linked=preparedStockIds.has(p.id);
-
-const medialunas=
-String(p.name||'')
-.trim()
-.toLowerCase()==='medialunas';
-
+const medialunas=String(p.name||'').trim().toLowerCase()==='medialunas';
 return !linked && !medialunas;
 });
 
-return manualProducts.map(p=>`
+return manualProducts.map(p=>{
+const used=Number(shiftUsage[p.id]||0);
 
+return `
 <div class="prod stockrow">
 
 <div>
-
 <b>${esc(p.name)}</b>
-
 <div class="tiny">
-Descuenta ${p.unit_step} ${esc(p.unit_label)}
+Paso ${fmt(p.unit_step)} ${esc(p.unit_label)}
+· cargado en este turno:
+<b>${fmt(used)}</b>
 </div>
-
 </div>
 
 <div>
@@ -541,37 +468,60 @@ Descuenta ${p.unit_step} ${esc(p.unit_label)}
 ${fmt(p.stock_qty)}
 </div>
 
-<button onclick="take('${p.id}')">
-− Descontar
+<div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+
+<button class="sec"
+onclick="changeUsage('${p.id}',-1)"
+${used<=0?'disabled':''}>
+− Borrar
+</button>
+
+<button onclick="changeUsage('${p.id}',1)">
++ Cargar
 </button>
 
 </div>
-
 </div>
-
-`).join('');
+</div>`;
+}).join('');
 }
 
+async function loadShiftUsage(){
 
-async function take(id){
-
-const p=products.find(x=>x.id===id);
-
-if(!p)return;
-
-const qty=Number(p.unit_step||1);
-
-if(!confirm(
-`¿Descontar ${fmt(qty)} ${p.unit_label||'unidad'} de ${p.name}?`
-)){
+if(!shift?.id){
+shiftUsage={};
 return;
 }
 
+const r=await sb
+.from('shift_stock')
+.select('product_id,used_qty')
+.eq('shift_id',shift.id);
+
+if(r.error){
+console.error(r.error);
+return;
+}
+
+shiftUsage={};
+
+(r.data||[]).forEach(x=>{
+shiftUsage[x.product_id]=Number(x.used_qty||0);
+});
+
+if($('work') && shift)renderShift();
+}
+
+async function changeUsage(id,direction){
+
+if(!shift?.id)return;
+
 const r=await sb.rpc(
-'decrement_stock',
+'adjust_shift_usage',
 {
 p_product:id,
-p_shift:shift?.id||null
+p_shift:shift.id,
+p_direction:direction
 }
 );
 
@@ -580,20 +530,18 @@ alert(r.error.message);
 return;
 }
 
-await loadProducts();
+shiftUsage[id]=Number(r.data||0);
 
 renderShift();
 }
 
-
-/* =========================
-ELABORADOS EMPLEADAS
-========================= */
+async function take(id){
+return changeUsage(id,1);
+}
 
 function preparedHTML(){
 
 if(!preparedProducts.length){
-
 return `
 <p class="muted">
 No hay productos elaborados configurados.
@@ -612,9 +560,7 @@ Completá las cantidades del turno.
 La aplicación calcula automáticamente lo vendido.
 </p>
 
-<label>
-Cantidad que recibís al comenzar
-</label>
+<label>Cantidad que recibís al comenzar</label>
 
 <input
 id="prep_open_${p.id}"
@@ -624,9 +570,7 @@ step="1"
 oninput="updatePreparedCalculation('${p.id}')"
 >
 
-<label>
-Cantidad que cocinás durante el turno
-</label>
+<label>Cantidad que cocinás durante el turno</label>
 
 <input
 id="prep_made_${p.id}"
@@ -636,9 +580,7 @@ step="1"
 oninput="updatePreparedCalculation('${p.id}')"
 >
 
-<label>
-Cantidad que queda al finalizar
-</label>
+<label>Cantidad que queda al finalizar</label>
 
 <input
 id="prep_close_${p.id}"
@@ -648,9 +590,7 @@ step="1"
 oninput="updatePreparedCalculation('${p.id}')"
 >
 
-<div
-class="calc"
-id="prep_calc_${p.id}">
+<div class="calc" id="prep_calc_${p.id}">
 Vendidas: —
 </div>
 
@@ -665,7 +605,6 @@ Guardar ${esc(p.name)}
 `).join('');
 }
 
-
 function updatePreparedCalculation(id){
 
 const a=$('prep_open_'+id)?.value;
@@ -677,9 +616,7 @@ const box=$('prep_calc_'+id);
 if(!box)return;
 
 if(a===''||b===''||c===''){
-
 box.textContent='Vendidas: —';
-
 return;
 }
 
@@ -690,15 +627,12 @@ const closing=Number(c);
 const sold=opening+made-closing;
 
 if(sold<0){
-
 box.textContent='Revisá las cantidades';
-
 return;
 }
 
 box.textContent='Vendidas: '+fmt(sold);
 }
-
 
 async function loadPreparedCounts(){
 
@@ -720,107 +654,30 @@ const a=$('prep_open_'+x.prepared_product_id);
 const b=$('prep_made_'+x.prepared_product_id);
 const c=$('prep_close_'+x.prepared_product_id);
 
-if(a)a.value=x.opening_qty??'';
-if(b)b.value=x.made_qty??'';
-if(c)c.value=x.closing_qty??'';
+if(a)a.value=x.opening_qty;
+if(b)b.value=x.made_qty;
+if(c && x.closing_qty!=null)c.value=x.closing_qty;
 
-updatePreparedCalculation(
-x.prepared_product_id
-);
+updatePreparedCalculation(x.prepared_product_id);
 
 });
 }
 
+async function savePreparedProduct(id){
 
-async function savePreparedProduct(
-id,
-required=false
-){
+if(!shift)return;
 
-const ao=$('prep_open_'+id);
-const bm=$('prep_made_'+id);
-const cc=$('prep_close_'+id);
+const opening=Number($('prep_open_'+id)?.value||0);
+const made=Number($('prep_made_'+id)?.value||0);
 
-if(!ao||!bm||!cc)return true;
-
-const av=ao.value;
-const bv=bm.value;
-const cv=cc.value;
-
-if(av===''||bv===''){
-
-if(required){
-
-alert(
-'Completá la cantidad inicial y lo cocinado durante el turno.'
-);
-
-return false;
-}
-
-return true;
-}
-
-const opening=Number(av);
-const made=Number(bv);
+const closeValue=$('prep_close_'+id)?.value;
 
 const closing=
-cv===''?null:Number(cv);
-
-if(
-!Number.isInteger(opening)||
-opening<0||
-!Number.isInteger(made)||
-made<0
-){
-
-alert(
-'Las cantidades deben ser números enteros.'
-);
-
-return false;
-}
-
-if(required && closing===null){
-
-alert(
-'Completá cuánto queda de cada elaborado antes de cerrar el turno.'
-);
-
-return false;
-}
-
-if(
-closing!==null &&
-(
-!Number.isInteger(closing)||
-closing<0
-)
-){
-
-alert(
-'La cantidad final no es válida.'
-);
-
-return false;
-}
-
-if(
-closing!==null &&
-closing>opening+made
-){
-
-alert(
-'La cantidad final no puede ser mayor que lo recibido más lo cocinado.'
-);
-
-return false;
-}
+closeValue===''?null:Number(closeValue);
 
 const r=await sb
 .from('prepared_shift_counts')
-.upsert(
-{
+.upsert({
 shift_id:shift.id,
 prepared_product_id:id,
 user_id:me.id,
@@ -828,569 +685,345 @@ opening_qty:opening,
 made_qty:made,
 closing_qty:closing,
 updated_at:new Date().toISOString()
-},
-{
+},{
 onConflict:'shift_id,prepared_product_id'
-}
-);
+});
 
 if(r.error){
-
 alert(r.error.message);
-
-return false;
+return;
 }
 
-updatePreparedCalculation(id);
-
-if($('status')){
-$('status').textContent=
-'Elaborados guardados ✓';
+alert('Guardado ✓');
 }
-
-return true;
-}
-
-
-async function saveAllPrepared(
-required=false
-){
-
-for(const p of preparedProducts){
-
-const ok=
-await savePreparedProduct(
-p.id,
-required
-);
-
-if(!ok)return false;
-}
-
-return true;
-}
-
-
-/* =========================
-PANTALLA TURNO
-========================= */
 
 function renderShift(){
+
+if(!shift)return;
 
 $('work').innerHTML=`
 
 <div class="card">
 
-<h2>
-${shift.kind==='morning'
-?'Turno Mañana'
-:'Turno Tarde'}
-</h2>
+<h2>Turno abierto</h2>
+
+<div class="badge">
+${shift.kind==='morning'?'MAÑANA':'TARDE'}
+</div>
+
+<h3>Productos utilizados</h3>
 
 <p class="muted">
-El turno permanece abierto durante toda la jornada.
+Podés cargar y borrar durante todo el turno.
+El stock real NO se descuenta hasta confirmar el cierre.
 </p>
-
-
-<h3>Stock</h3>
 
 ${employeeStock()}
 
-
-<h3>Leches utilizadas</h3>
-
-<div class="row">
-
-<div>
-
-<label>Entera</label>
-
-<input
-id="milk_whole"
-type="number"
-min="0"
-step="0.5"
-placeholder="0">
-
-</div>
-
-<div>
-
-<label>Descremada</label>
-
-<input
-id="milk_skim"
-type="number"
-min="0"
-step="0.5"
-placeholder="0">
-
-</div>
-
-</div>
-
-<button
-class="sec"
-onclick="saveMilk()">
-Guardar leches
-</button>
-
-
 <h3>Elaborados</h3>
-
-<p class="muted">
-Anotá cuánto recibís,
-cuánto cocinás durante el turno
-y cuánto queda cuando termina.
-</p>
 
 ${preparedHTML()}
 
+<h3>Leches utilizadas</h3>
 
-<h3>Productos no facturados</h3>
+<label>Leche entera</label>
+<input id="wholeMilk" type="number" min="0" step="0.5" value="0">
 
-<input
-id="un"
-placeholder="Nombre del producto">
-
-<input
-id="uc"
-placeholder="Código del producto">
-
-<input
-id="ut"
-type="time">
-
-<button
-class="sec"
-onclick="addUnbilled()">
-Agregar no facturado
-</button>
-
-<div id="unlist"></div>
-
+<label>Leche descremada</label>
+<input id="skimMilk" type="number" min="0" step="0.5" value="0">
 
 <h3>Sobrante de caja</h3>
 
-<p class="muted">
-Si no hubo diferencia, poné 0.
-</p>
-
 <input
-id="cash"
+id="cashSurplus"
 type="number"
-step="0.01"
 min="0"
-placeholder="$ 0">
-
-<button
-class="sec"
-onclick="saveCash()">
-Guardar sobrante
-</button>
-
-
-<h3>Notas</h3>
-
-<textarea
-id="note"
-placeholder="Observaciones del turno...">
-</textarea>
-
-<label>
-
-<input
-id="nonotes"
-type="checkbox"
-style="width:auto"
-onchange="toggleNotes()">
-
-No hay notas
-
-</label>
-
-<button
-class="sec"
-onclick="saveNotes()">
-Guardar notas
-</button>
-
+step="1"
+value="0"
+placeholder="Sobrante de caja">
 
 <button
 class="red"
-onclick="closeShift()">
+onclick="showCloseSummary()">
 Cerrar turno
 </button>
-
-<p id="status" class="muted"></p>
 
 </div>
 `;
 
-loadMilk();
 loadPreparedCounts();
-loadUnbilled();
-loadNotes();
-
-$('cash').value=
-shift.cash_surplus||0;
+loadClosingFields();
 }
 
+async function loadClosingFields(){
 
-/* =========================
-LECHES
-========================= */
+if(!shift)return;
 
-async function saveMilk(){
+const [milkR,shiftR]=await Promise.all([
 
-const r=await sb
-.from('milk_usage')
-.upsert({
-shift_id:shift.id,
-whole_boxes:Number(
-$('milk_whole').value||0
-),
-skim_boxes:Number(
-$('milk_skim').value||0
-),
-updated_at:new Date().toISOString()
-});
-
-if(r.error){
-
-alert(r.error.message);
-
-return false;
-}
-
-$('status').textContent=
-'Leches guardadas ✓';
-
-return true;
-}
-
-
-async function loadMilk(){
-
-const r=await sb
-.from('milk_usage')
+sb.from('milk_usage')
 .select('*')
 .eq('shift_id',shift.id)
-.maybeSingle();
+.maybeSingle(),
 
-if(r.data){
+sb.from('shifts')
+.select('cash_surplus')
+.eq('id',shift.id)
+.single()
 
-$('milk_whole').value=
-r.data.whole_boxes;
+]);
 
-$('milk_skim').value=
-r.data.skim_boxes;
+if($('wholeMilk')){
+$('wholeMilk').value=milkR.data?.whole_boxes||0;
+}
+
+if($('skimMilk')){
+$('skimMilk').value=milkR.data?.skim_boxes||0;
+}
+
+if($('cashSurplus')){
+$('cashSurplus').value=shiftR.data?.cash_surplus||0;
 }
 }
 
+async function saveAllPreparedBeforeSummary(){
 
-/* =========================
-CAJA
-========================= */
+for(const p of preparedProducts){
 
-async function saveCash(){
+const a=$('prep_open_'+p.id);
+const b=$('prep_made_'+p.id);
+const c=$('prep_close_'+p.id);
 
-const v=Number(
-$('cash').value||0
+if(!a||!b||!c)continue;
+
+if(c.value===''){
+throw new Error(
+`Completá la cantidad final de ${p.name}.`
 );
-
-const r=await sb
-.from('shifts')
-.update({
-cash_surplus:v
-})
-.eq('id',shift.id);
-
-if(r.error){
-
-alert(r.error.message);
-
-return false;
 }
 
-shift.cash_surplus=v;
+const opening=Number(a.value||0);
+const made=Number(b.value||0);
+const closing=Number(c.value);
 
-$('status').textContent=
-'Sobrante de caja guardado ✓';
-
-return true;
-}
-
-
-/* =========================
-NO FACTURADOS
-========================= */
-
-async function addUnbilled(){
-
-if(
-!$('un').value.trim()||
-!$('uc').value.trim()||
-!$('ut').value
-){
-
-alert(
-'Completá nombre, código y hora.'
+if(opening+made-closing<0){
+throw new Error(
+`Revisá las cantidades de ${p.name}.`
 );
-
-return;
 }
 
 const r=await sb
-.from('unbilled_items')
-.insert({
-shift_id:shift.id,
-created_by:me.id,
-product_name:$('un').value.trim(),
-product_code:$('uc').value.trim(),
-sold_at:$('ut').value,
-quantity:1,
-unit_price:0
-});
-
-if(r.error){
-
-alert(r.error.message);
-
-return;
-}
-
-$('un').value='';
-$('uc').value='';
-$('ut').value='';
-
-loadUnbilled();
-}
-
-
-async function loadUnbilled(){
-
-const r=await sb
-.from('unbilled_items')
-.select('*')
-.eq('shift_id',shift.id)
-.order('created_at');
-
-$('unlist').innerHTML=
-(r.data||[]).map(x=>`
-
-<div class="item">
-
-<b>${esc(x.product_name)}</b>
-
-· Código ${esc(x.product_code)}
-
-· ${esc(
-(x.sold_at||'').slice(0,5)
-)}
-
-</div>
-
-`).join('')
-||
-'<p class="muted">Sin productos no facturados.</p>';
-}
-
-
-/* =========================
-NOTAS
-========================= */
-
-function toggleNotes(){
-
-const n=$('nonotes').checked;
-
-$('note').disabled=n;
-
-if(n){
-$('note').value='';
-}
-}
-
-
-async function saveNotes(){
-
-const r=await sb
-.from('shift_notes')
+.from('prepared_shift_counts')
 .upsert({
 shift_id:shift.id,
+prepared_product_id:p.id,
 user_id:me.id,
-note:$('note').value.trim()||null,
-no_notes:$('nonotes').checked,
+opening_qty:opening,
+made_qty:made,
+closing_qty:closing,
 updated_at:new Date().toISOString()
+},{
+onConflict:'shift_id,prepared_product_id'
 });
 
-if(r.error){
-
-alert(r.error.message);
-
-return false;
-}
-
-return true;
-}
-
-
-async function loadNotes(){
-
-const r=await sb
-.from('shift_notes')
-.select('*')
-.eq('shift_id',shift.id)
-.maybeSingle();
-
-if(r.data){
-
-$('note').value=
-r.data.note||'';
-
-$('nonotes').checked=
-!!r.data.no_notes;
-
-toggleNotes();
+if(r.error)throw r.error;
 }
 }
 
+async function showCloseSummary(){
 
-/* =========================
-CERRAR TURNO
-========================= */
+if(closingShift||!shift)return;
 
-async function closeShift(){
+try{
 
-if(
-$('milk_whole').value===''||
-$('milk_skim').value===''
-){
+await saveAllPreparedBeforeSummary();
 
-alert(
-'Completá las leches utilizadas. Si no usaron, poné 0.'
-);
+const whole=Number($('wholeMilk')?.value||0);
+const skim=Number($('skimMilk')?.value||0);
+const cash=Number($('cashSurplus')?.value||0);
 
-return;
-}
+const usageRows=products
+.filter(p=>Number(shiftUsage[p.id]||0)>0)
+.map(p=>`
+<div class="item">
+${esc(p.name)}
+<b style="float:right">
+${fmt(shiftUsage[p.id])}
+</b>
+</div>
+`)
+.join('');
 
-const milkOK=await saveMilk();
+const preparedRows=preparedProducts.map(p=>{
 
-if(milkOK===false)return;
+const a=Number($('prep_open_'+p.id)?.value||0);
+const b=Number($('prep_made_'+p.id)?.value||0);
+const c=Number($('prep_close_'+p.id)?.value||0);
 
-const cashOK=await saveCash();
-
-if(cashOK===false)return;
-
-const preparedOK=
-await saveAllPrepared(true);
-
-if(!preparedOK)return;
-
-const notesOK=
-await saveNotes();
-
-if(notesOK===false)return;
-
-if(!confirm(
-'¿Confirmás cerrar el turno? Los elaborados vendidos se calcularán automáticamente.'
-)){
-return;
-}
-
-
-/* CALCULA Y DESCUENTA ELABORADOS */
-
-const calc=await sb.rpc(
-'finalize_prepared_sales',
-{
-p_shift:shift.id
-}
-);
-
-if(calc.error){
-
-alert(
-'No se pudo calcular el stock de elaborados: '
-+calc.error.message
-);
-
-return;
-}
-
-
-/* CIERRA TURNO */
-
-const r=await sb
-.from('shifts')
-.update({
-status:'closed',
-closed_at:new Date().toISOString()
-})
-.eq('id',shift.id);
-
-if(r.error){
-
-alert(r.error.message);
-
-return;
-}
-
-shift=null;
-
-await loadProducts();
-
-alert(
-'Turno cerrado correctamente ✓'
-);
-
-renderHead();
-employeeHome();
-}
-
-
-/* =========================
-ADMINISTRACIÓN
-========================= */
-
-function adminHome(){
+return `
+<div class="item">
+${esc(p.name)}
+<b style="float:right">
+${fmt(a+b-c)} vendidas
+</b>
+</div>
+`;
+}).join('');
 
 $('work').innerHTML=`
 
 <div class="card">
 
-<h2>
-Panel de Administración
-</h2>
+<h2>Resumen para cerrar turno</h2>
 
 <p class="muted">
-Abril y Fabio tienen los mismos permisos.
+Revisá todo antes de confirmar.
+Hasta que no confirmes, el stock real no se modifica.
 </p>
 
-<div class="grid">
+<h3>Productos utilizados</h3>
 
-<button onclick="adminStock()">
-Stock
+${usageRows||
+'<p class="muted">No se cargaron productos.</p>'}
+
+<h3>Elaborados</h3>
+
+${preparedRows||
+'<p class="muted">Sin elaborados.</p>'}
+
+<h3>Leches</h3>
+
+<div class="item">
+Leche entera
+<b style="float:right">${fmt(whole)}</b>
+</div>
+
+<div class="item">
+Leche descremada
+<b style="float:right">${fmt(skim)}</b>
+</div>
+
+<h3>Sobrante de caja</h3>
+
+<div class="money">
+$ ${fmt(cash)}
+</div>
+
+<button
+id="confirmCloseBtn"
+class="red"
+onclick="closeShift(${whole},${skim},${cash})">
+Confirmar y cerrar turno
 </button>
 
-<button onclick="adminPrepared()">
-Elaborados
-</button>
-
-<button onclick="adminProducts()">
-Productos
-</button>
-
-<button onclick="adminTurns()">
-Turnos
-</button>
-
-<button onclick="adminAlerts()">
-Alertas
+<button
+class="sec"
+onclick="renderShift()">
+Volver y corregir
 </button>
 
 </div>
+`;
+
+}catch(e){
+alert(e.message||String(e));
+}
+}
+
+async function closeShift(whole,skim,cash){
+
+if(closingShift||!shift)return;
+
+closingShift=true;
+
+const btn=$('confirmCloseBtn');
+
+if(btn){
+btn.disabled=true;
+btn.textContent='Cerrando turno...';
+}
+
+try{
+
+const r=await sb.rpc(
+'close_shift_atomic',
+{
+p_shift:shift.id,
+p_whole:Number(whole||0),
+p_skim:Number(skim||0),
+p_cash:Number(cash||0)
+}
+);
+
+if(r.error)throw r.error;
+
+const verify=await sb
+.from('shifts')
+.select('status,closed_at')
+.eq('id',shift.id)
+.single();
+
+if(verify.error)throw verify.error;
+
+if(verify.data?.status!=='closed'){
+throw new Error(
+'El cierre no fue confirmado por la base de datos.'
+);
+}
+
+shift=null;
+shiftUsage={};
+
+await loadProducts();
+
+renderHead();
+employeeHome();
+
+alert('Turno cerrado correctamente ✓');
+
+}catch(e){
+
+alert(
+'No se pudo cerrar el turno. No se aplicó el cierre. '+(e.message||'')
+);
+
+if(btn){
+btn.disabled=false;
+btn.textContent='Confirmar y cerrar turno';
+}
+
+}finally{
+closingShift=false;
+}
+}
+
+async function adminHome(){
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Administración</h2>
+
+<button onclick="adminStock()">
+Control de stock
+</button>
+
+<button class="sec" onclick="adminPrepared()">
+Elaborados
+</button>
+
+<button class="sec" onclick="adminProducts()">
+Productos
+</button>
+
+<button class="sec" onclick="adminTurns()">
+Turnos
+</button>
+
+<button class="sec" onclick="adminAlerts()">
+Alertas
+</button>
 
 </div>
 
@@ -1400,81 +1033,14 @@ Alertas
 adminAlerts(true);
 }
 
-
-/* =========================
-ADMIN ELABORADOS
-========================= */
-
 function adminPrepared(){
 
-const html=preparedProducts.map(pp=>{
-
-const p=products.find(
-x=>x.id===pp.stock_product_id
-);
-
-if(!p){
-
-return `
-
-<div class="preparedAdmin">
-
-<h3>${esc(pp.name)}</h3>
-
-<div class="alert">
-Este elaborado todavía no está vinculado a un producto de stock.
-</div>
-
-</div>
-`;
-}
-
-return `
-
-<div class="preparedAdmin">
-
-<span class="badge">
-ELABORADO
-</span>
-
-<h2>${esc(pp.name)}</h2>
-
-<div class="muted">
-Stock actual
-</div>
-
-<div class="bigstock">
-${fmt(p.stock_qty)}
-</div>
-
-<div class="tiny">
-${esc(p.unit_label||'unidad')}
-</div>
-
-<h3>Cargar / corregir stock</h3>
-
-<input
-id="prepstock_${p.id}"
-type="number"
-min="0"
-step="1"
-placeholder="Cantidad">
-
-<button
-onclick="addPreparedStock('${p.id}')">
-+ Cargar stock
-</button>
-
-<button
-class="sec"
-onclick="discountPreparedStock('${p.id}')">
-− Corregir / descontar
-</button>
-
-</div>
-`;
-
-}).join('');
+const linked=preparedProducts
+.map(pp=>({
+...pp,
+stock:products.find(p=>p.id===pp.stock_product_id)
+}))
+.filter(x=>x.stock);
 
 $('work').innerHTML=`
 
@@ -1483,38 +1049,64 @@ $('work').innerHTML=`
 <h2>Elaborados</h2>
 
 <p class="muted">
-Acá administrás el stock de medialunas y de los demás elaborados.
-Las empleadas no descuentan estos productos manualmente.
+Administración del stock de productos elaborados.
 </p>
 
-${html||
-'<p class="muted">No hay elaborados configurados.</p>'}
+${linked.map(p=>`
+
+<div class="preparedAdmin">
+
+<b>${esc(p.name)}</b>
+
+<div class="bigstock">
+${fmt(p.stock.stock_qty)}
+</div>
+
+<div class="tiny">
+Stock actual
+</div>
+
+<input
+id="prepstock_${p.stock.id}"
+type="number"
+min="0"
+step="${p.stock.unit_step||1}"
+placeholder="Cantidad">
+
+<div class="row">
+
+<button onclick="addPreparedStock('${p.stock.id}')">
++ Cargar
+</button>
 
 <button
-class="ghost"
-onclick="adminHome()">
-← Volver
+class="sec"
+onclick="discountPreparedStock('${p.stock.id}')">
+− Descontar
+</button>
+
+</div>
+
+</div>
+
+`).join('')}
+
+<button class="green" onclick="adminHome()">
+Volver
 </button>
 
 </div>
 `;
 }
 
-
 async function addPreparedStock(id){
 
 const el=$('prepstock_'+id);
 
-const v=Number(
-el?.value||0
-);
+const v=Number(el?.value||0);
 
 if(!v||v<=0){
-
-alert(
-'Ingresá una cantidad válida.'
-);
-
+alert('Ingresá una cantidad válida.');
 return;
 }
 
@@ -1527,32 +1119,22 @@ p_delta:v
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
-
 adminPrepared();
 }
-
 
 async function discountPreparedStock(id){
 
 const el=$('prepstock_'+id);
 
-const v=Number(
-el?.value||0
-);
+const v=Number(el?.value||0);
 
 if(!v||v<=0){
-
-alert(
-'Ingresá la cantidad que querés descontar.'
-);
-
+alert('Ingresá la cantidad que querés descontar.');
 return;
 }
 
@@ -1571,22 +1153,13 @@ p_delta:-v
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
-
 adminPrepared();
 }
-
-
-/* =========================
-ADMIN STOCK COMÚN
-NO MUESTRA ELABORADOS
-========================= */
 
 function adminStock(){
 
@@ -1659,7 +1232,6 @@ Cerrar control de stock
 `;
 }
 
-
 async function addStock(id){
 
 const v=Number(
@@ -1667,11 +1239,7 @@ $('add'+id).value||0
 );
 
 if(!v||v<=0){
-
-alert(
-'Ingresá una cantidad válida'
-);
-
+alert('Ingresá una cantidad válida');
 return;
 }
 
@@ -1684,17 +1252,13 @@ p_delta:v
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
-
 adminStock();
 }
-
 
 async function discountStock(id){
 
@@ -1709,11 +1273,7 @@ $('add'+id).value||0
 );
 
 if(!v||v<=0){
-
-alert(
-'Ingresá la cantidad que querés descontar'
-);
-
+alert('Ingresá la cantidad que querés descontar');
 return;
 }
 
@@ -1732,21 +1292,13 @@ p_delta:-v
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
-
 adminStock();
 }
-
-
-/* =========================
-PRODUCTOS ADMIN
-========================= */
 
 function adminProducts(){
 
@@ -1786,7 +1338,6 @@ Eliminar / desactivar
 `;
 }
 
-
 function newProductForm(){
 
 $('work').innerHTML=`
@@ -1810,9 +1361,7 @@ min="0"
 step="0.5"
 value="0">
 
-<label>
-Cantidad que descuenta cada toque
-</label>
+<label>Cantidad que descuenta cada toque</label>
 
 <input
 id="pst"
@@ -1842,15 +1391,12 @@ Cancelar
 `;
 }
 
-
 async function createProduct(){
 
 const n=$('pn').value.trim();
 
 if(!n){
-
 alert('Poné el nombre.');
-
 return;
 }
 
@@ -1858,37 +1404,25 @@ const r=await sb.rpc(
 'manager_create_product',
 {
 p_name:n,
-p_stock:Number(
-$('ps').value||0
-),
-p_step:Number(
-$('pst').value||1
-),
+p_stock:Number($('ps').value||0),
+p_step:Number($('pst').value||1),
 p_unit:$('pu').value.trim()||'unidad'
 }
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
 
-alert(
-'Producto creado ✓'
-);
+alert('Producto creado ✓');
 
 adminProducts();
 }
 
-
-async function deactivateProduct(
-id,
-name
-){
+async function deactivateProduct(id,name){
 
 if(!confirm(
 `¿Desactivar ${name}? No se borra su historial.`
@@ -1905,31 +1439,20 @@ p_active:false
 );
 
 if(r.error){
-
 alert(r.error.message);
-
 return;
 }
 
 await loadProducts();
-
 adminProducts();
 }
-
-
-/* =========================
-TURNOS ADMIN
-========================= */
 
 async function adminTurns(){
 
 const r=await sb
 .from('shifts')
 .select('*,profiles(full_name)')
-.order(
-'opened_at',
-{ascending:false}
-)
+.order('opened_at',{ascending:false})
 .limit(80);
 
 $('work').innerHTML=`
@@ -1945,22 +1468,15 @@ class="prod click"
 onclick="turnDetail('${s.id}')">
 
 <b>
-${esc(
-s.profiles?.full_name||
-'Empleado'
-)}
+${esc(s.profiles?.full_name||'Empleado')}
 </b>
 
 ·
-${s.kind==='morning'
-?'Mañana'
-:'Tarde'}
+${s.kind==='morning'?'Mañana':'Tarde'}
 
 <div class="tiny">
 
-${new Date(
-s.opened_at
-).toLocaleString('es-AR')}
+${new Date(s.opened_at).toLocaleString('es-AR')}
 
 ·
 
@@ -1979,7 +1495,6 @@ ${s.status==='closed'
 </div>
 `;
 }
-
 
 async function turnDetail(id){
 
@@ -2034,8 +1549,7 @@ const s=sr.data;
 
 if(!s)return;
 
-const prepared=
-pr.data||[];
+const prepared=pr.data||[];
 
 const preparedText=
 prepared.length
@@ -2056,10 +1570,7 @@ return `
 <div class="preparedAdmin">
 
 <b>
-${esc(
-x.prepared_products?.name||
-'Elaborado'
-)}
+${esc(x.prepared_products?.name||'Elaborado')}
 </b>
 
 <div class="tiny">
@@ -2081,9 +1592,7 @@ ${x.closing_qty==null
 
 Vendidas:
 <b>
-${sold==null
-?'—'
-:fmt(sold)}
+${sold==null?'—':fmt(sold)}
 </b>
 
 </div>
@@ -2095,7 +1604,6 @@ ${sold==null
 
 :
 '<p class="muted">Sin datos de elaborados.</p>';
-
 
 const moves=
 (mvr.data||[])
@@ -2114,11 +1622,8 @@ x.products?.name||
 totals[n]=
 (totals[n]||0)
 +
-Math.abs(
-Number(x.delta)
-);
+Math.abs(Number(x.delta));
 });
-
 
 $('work').innerHTML=`
 
@@ -2131,10 +1636,7 @@ onclick="adminTurns()">
 </button>
 
 <h2>
-${esc(
-s.profiles?.full_name||
-'Turno'
-)}
+${esc(s.profiles?.full_name||'Turno')}
 </h2>
 
 <div class="badge">
@@ -2151,11 +1653,9 @@ ${s.status==='closed'
 
 </div>
 
-
 <h3>Elaborados</h3>
 
 ${preparedText}
-
 
 <h3>Stock consumido</h3>
 
@@ -2173,36 +1673,25 @@ ${esc(n)}:
 ||
 '<p class="muted">Sin descuentos.</p>'}
 
-
 <h3>Leches</h3>
 
 <p>
 
 Entera:
-<b>
-${fmt(
-mr.data?.whole_boxes
-)}
-</b>
+<b>${fmt(mr.data?.whole_boxes)}</b>
 
 ·
 
 Descremada:
-<b>
-${fmt(
-mr.data?.skim_boxes
-)}
-</b>
+<b>${fmt(mr.data?.skim_boxes)}</b>
 
 </p>
-
 
 <h3>Sobrante de caja</h3>
 
 <div class="money">
 $ ${fmt(s.cash_surplus)}
 </div>
-
 
 <h3>No facturados</h3>
 
@@ -2225,17 +1714,13 @@ ${(x.sold_at||'').slice(0,5)}
 ||
 '<p class="muted">Ninguno.</p>'}
 
-
 <h3>Notas</h3>
 
 <p>
 
 ${nr.data?.no_notes
 ?'No hay notas'
-:esc(
-nr.data?.note||
-'Sin cargar'
-)}
+:esc(nr.data?.note||'Sin cargar')}
 
 </p>
 
@@ -2243,23 +1728,13 @@ nr.data?.note||
 `;
 }
 
-
-/* =========================
-ALERTAS ADMIN
-========================= */
-
-async function adminAlerts(
-inDash=false
-){
+async function adminAlerts(inDash=false){
 
 const r=await sb
 .from('shifts')
 .select('*,profiles(full_name)')
 .eq('status','closed')
-.order(
-'closed_at',
-{ascending:false}
-)
+.order('closed_at',{ascending:false})
 .limit(15);
 
 let alerts=[];
@@ -2274,10 +1749,7 @@ alerts.push(`
 
 <b>
 Diferencia de caja ·
-${esc(
-s.profiles?.full_name||
-''
-)}
+${esc(s.profiles?.full_name||'')}
 </b>
 
 <br>
@@ -2291,18 +1763,12 @@ $ ${fmt(s.cash_surplus)}
 }
 }
 
-
-/* ALERTAS DE ELABORADOS */
-
 const cr=await sb
 .from('prepared_shift_counts')
 .select(
 '*,prepared_products(name),shifts(opened_at,status,employee_id,profiles(full_name))'
 )
-.order(
-'updated_at',
-{ascending:false}
-)
+.order('updated_at',{ascending:false})
 .limit(100);
 
 const grouped={};
@@ -2313,8 +1779,7 @@ x=>x.shifts?.status==='closed'
 )
 .forEach(x=>{
 
-const key=
-x.prepared_product_id;
+const key=x.prepared_product_id;
 
 if(!grouped[key]){
 grouped[key]=[];
@@ -2324,26 +1789,17 @@ grouped[key].push(x);
 
 });
 
-
 Object.values(grouped)
 .forEach(arr=>{
 
 arr.sort(
 (a,b)=>
-new Date(
-a.shifts.opened_at
-)
+new Date(a.shifts.opened_at)
 -
-new Date(
-b.shifts.opened_at
-)
+new Date(b.shifts.opened_at)
 );
 
-for(
-let i=1;
-i<arr.length;
-i++
-){
+for(let i=1;i<arr.length;i++){
 
 const prev=arr[i-1];
 const cur=arr[i];
@@ -2366,35 +1822,22 @@ alerts.push(`
 
 <b>
 Diferencia de
-${esc(
-cur.prepared_products?.name||
-'elaborado'
-)}
+${esc(cur.prepared_products?.name||'elaborado')}
 </b>
 
 <br>
 
-${esc(
-prev.shifts.profiles?.full_name||
-'Turno anterior'
-)}
+${esc(prev.shifts.profiles?.full_name||'Turno anterior')}
 
 dejó
 
-${fmt(
-prev.closing_qty
-)};
+${fmt(prev.closing_qty)};
 
-${esc(
-cur.shifts.profiles?.full_name||
-'turno siguiente'
-)}
+${esc(cur.shifts.profiles?.full_name||'turno siguiente')}
 
 recibió
 
-${fmt(
-cur.opening_qty
-)}.
+${fmt(cur.opening_qty)}.
 
 <b>
 
@@ -2411,12 +1854,10 @@ ${d>0
 }
 });
 
-
 const html=
 alerts.join('')
 ||
 '<div class="okbox">No hay alertas pendientes en los últimos cierres.</div>';
-
 
 if(inDash){
 
@@ -2428,9 +1869,7 @@ d.innerHTML=`
 
 <div class="card">
 
-<h2>
-Alertas recientes
-</h2>
+<h2>Alertas recientes</h2>
 
 ${html}
 
@@ -2452,11 +1891,6 @@ ${html}
 `;
 }
 }
-
-
-/* =========================
-CIERRE AUTOMÁTICO
-========================= */
 
 setInterval(
 async()=>{
@@ -2481,9 +1915,7 @@ const r=await sb
 .eq('id',shift.id)
 .single();
 
-if(
-r.data?.status==='closed'
-){
+if(r.data?.status==='closed'){
 
 shift=null;
 
@@ -2492,7 +1924,6 @@ alert(
 );
 
 renderHead();
-
 employeeHome();
 }
 
@@ -2501,7 +1932,6 @@ employeeHome();
 },
 60000
 );
-
 
 boot();
 
