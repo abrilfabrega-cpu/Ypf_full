@@ -960,7 +960,33 @@ Cerrar turno
 loadPreparedCounts();
 loadClosingFields();
 }
+loadPreparedCounts();
+loadClosingFields();
+}
 
+async function loadClosingFields(){
+
+if(!shift)return;
+
+const shiftR=await sb
+.from('shifts')
+.select('cash_surplus')
+.eq('id',shift.id)
+.single();
+
+if(shiftR.error){
+console.error(shiftR.error);
+return;
+}
+
+if($('cashSurplus')){
+$('cashSurplus').value=
+shiftR.data?.cash_surplus||0;
+}
+
+}
+
+async function saveAllPreparedBeforeSummary(){
 async function loadClosingFields(){
 
 if(!shift)return;
@@ -1070,11 +1096,6 @@ try{
 
 await saveAllPreparedBeforeSummary();
 
-const whole=
-Number($('wholeMilk')?.value||0);
-
-const skim=
-Number($('skimMilk')?.value||0);
 
 const cash=
 Number($('cashSurplus')?.value||0);
@@ -1158,27 +1179,6 @@ ${usageRows||
 ${preparedRows||
 '<p class="muted">Sin elaborados.</p>'}
 
-<h3>Leches</h3>
-
-<div class="item">
-
-Leche entera
-
-<b style="float:right">
-${fmt(whole)}
-</b>
-
-</div>
-
-<div class="item">
-
-Leche descremada
-
-<b style="float:right">
-${fmt(skim)}
-</b>
-
-</div>
 
 <h3>Sobrante de caja</h3>
 
@@ -1189,7 +1189,7 @@ $ ${fmt(cash)}
 <button
 id="confirmCloseBtn"
 class="red"
-onclick="closeShift(${whole},${skim},${cash})">
+onclick="closeShift(${cash})">
 Confirmar y cerrar turno
 </button>
 
