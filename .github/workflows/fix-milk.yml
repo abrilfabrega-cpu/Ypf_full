@@ -1,0 +1,62 @@
+name: Fix duplicated milk handling
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-milk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Correct milk flow
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+
+          old = """const medialunas=\nString(p.name||'')\n.trim()\n.toLowerCase()==='medialunas';\n\nreturn !linked && !medialunas;"""
+          new = """const normalizedName=String(p.name||'').trim().toLowerCase();\n\nconst medialunas=normalizedName==='medialunas';\nconst milk=normalizedName==='leche entera' || normalizedName==='leche descremada';\n\nreturn !linked && !medialunas && !milk;"""
+          if old not in s:
+              raise SystemExit('No se encontró el filtro de productos esperado')
+          s = s.replace(old, new, 1)
+
+          start = s.index('async function loadClosingFields(){', s.index('function renderShift(){'))
+          end = s.index('async function saveAllPreparedBeforeSummary(){', start)
+          second_load = s.index('async function loadClosingFields(){', end)
+          second_save = s.index('async function saveAllPreparedBeforeSummary(){', second_load)
+          clean_load = s[second_load:second_save]
+          s = s[:start] + clean_load + s[second_save:]
+
+          old = """const cash=\nNumber($('cashSurplus')?.value||0);"""
+          new = """const whole=Number($('wholeMilk')?.value||0);\nconst skim=Number($('skimMilk')?.value||0);\nconst cash=Number($('cashSurplus')?.value||0);"""
+          if old not in s:
+              raise SystemExit('No se encontró la lectura de caja esperada')
+          s = s.replace(old, new, 1)
+
+          old = """${preparedRows||\n'<p class=\"muted\">Sin elaborados.</p>'}\n\n\n<h3>Sobrante de caja</h3>"""
+          new = """${preparedRows||\n'<p class=\"muted\">Sin elaborados.</p>'}\n\n<h3>Leches utilizadas</h3>\n<div class=\"item\">Leche entera <b style=\"float:right\">${fmt(whole)}</b></div>\n<div class=\"item\">Leche descremada <b style=\"float:right\">${fmt(skim)}</b></div>\n\n<h3>Sobrante de caja</h3>"""
+          if old not in s:
+              raise SystemExit('No se encontró el resumen esperado')
+          s = s.replace(old, new, 1)
+
+          old = 'onclick="closeShift(${cash})"'
+          new = 'onclick="closeShift(${whole},${skim},${cash})"'
+          if old not in s:
+              raise SystemExit('No se encontró la llamada de cierre esperada')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s)
+      - name: Commit correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Correct milk stock handling"
+          git push
