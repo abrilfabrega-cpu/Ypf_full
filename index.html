@@ -492,12 +492,12 @@ const manualProducts=products.filter(p=>{
 
 const linked=preparedStockIds.has(p.id);
 
-const medialunas=
-String(p.name||'')
-.trim()
-.toLowerCase()==='medialunas';
+const normalizedName=String(p.name||'').trim().toLowerCase();
 
-return !linked && !medialunas;
+const medialunas=normalizedName==='medialunas';
+const milk=normalizedName==='leche entera' || normalizedName==='leche descremada';
+
+return !linked && !medialunas && !milk;
 });
 
 return manualProducts.map(p=>{
@@ -966,29 +966,6 @@ async function loadClosingFields(){
 
 if(!shift)return;
 
-const shiftR=await sb
-.from('shifts')
-.select('cash_surplus')
-.eq('id',shift.id)
-.single();
-
-if(shiftR.error){
-console.error(shiftR.error);
-return;
-}
-
-if($('cashSurplus')){
-$('cashSurplus').value=
-shiftR.data?.cash_surplus||0;
-}
-
-}
-
-async function saveAllPreparedBeforeSummary(){
-async function loadClosingFields(){
-
-if(!shift)return;
-
 const [milkR,shiftR]=await Promise.all([
 
 sb
@@ -1095,8 +1072,9 @@ try{
 await saveAllPreparedBeforeSummary();
 
 
-const cash=
-Number($('cashSurplus')?.value||0);
+const whole=Number($('wholeMilk')?.value||0);
+const skim=Number($('skimMilk')?.value||0);
+const cash=Number($('cashSurplus')?.value||0);
 
 const usageRows=products
 
@@ -1177,6 +1155,9 @@ ${usageRows||
 ${preparedRows||
 '<p class="muted">Sin elaborados.</p>'}
 
+<h3>Leches utilizadas</h3>
+<div class="item">Leche entera <b style="float:right">${fmt(whole)}</b></div>
+<div class="item">Leche descremada <b style="float:right">${fmt(skim)}</b></div>
 
 <h3>Sobrante de caja</h3>
 
@@ -1187,7 +1168,7 @@ $ ${fmt(cash)}
 <button
 id="confirmCloseBtn"
 class="red"
-onclick="closeShift(${cash})">
+onclick="closeShift(${whole},${skim},${cash})">
 Confirmar y cerrar turno
 </button>
 
