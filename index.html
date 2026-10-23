@@ -1,8 +1,70 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>YPF TRES SOLES FULL</title><style>html,body,#app{width:100%;height:100%;margin:0;border:0;display:block}#notice{display:none;position:fixed;inset:0;background:#16384b66;z-index:99999;align-items:center;justify-content:center;padding:20px}.box{width:min(520px,100%);background:white;border-radius:22px;padding:22px;box-shadow:0 18px 60px #16384b45;position:relative;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial;color:#16384b}.x{position:absolute;right:10px;top:10px;border:0;border-radius:50%;width:38px;height:38px;background:#e7f6fd;color:#1979a8;font-size:22px;font-weight:700}.body{white-space:pre-wrap;line-height:1.45;margin-top:10px}</style></head><body><iframe id="app" src="app.html"></iframe><div id="notice"><div class="box"><button class="x" onclick="document.getElementById('notice').style.display='none'">×</button><b>AVISO</b><h2 id="nt"></h2><div id="nb" class="body"></div></div></div><script>
-const f=document.getElementById('app');f.addEventListener('load',()=>setTimeout(inject,800));
-async function getNotice(w){try{const r=await w.sb.from('admin_alerts').select('id,title,body,created_at').is('shift_id',null).eq('kind','global').order('created_at',{ascending:false}).limit(1).maybeSingle();return r.data||null}catch(e){return null}}
-async function showEmployee(w){if(!w.me||w.me.role==='manager')return;const n=await getNotice(w);if(!n)return;document.getElementById('nt').textContent=n.title||'Aviso';document.getElementById('nb').textContent=n.body||'';document.getElementById('notice').style.display='flex'}
-async function adminPanel(w){const n=await getNotice(w);w.document.getElementById('work').innerHTML=`<div class="card"><h2>Aviso a empleadas</h2><p class="muted">Mientras esté activo, aparecerá cada vez que una empleada ingrese a la app.</p>${n?`<div class="alert"><b>Aviso activo</b><br>${w.esc(n.title)}<div style="white-space:pre-wrap;margin-top:6px">${w.esc(n.body)}</div></div>`:'<div class="okbox">No hay ningún aviso activo.</div>'}<label>Título</label><input id="manualNoticeTitle" value="${w.esc(n?.title||'Aviso importante')}"><label>Mensaje</label><textarea id="manualNoticeBody" placeholder="Escribí el aviso...">${w.esc(n?.body||'')}</textarea><button id="placeManualNotice">Colocar aviso</button>${n?'<button class="red" id="removeManualNotice">Sacar aviso</button>':''}<button class="sec" id="backManualNotice">Volver</button></div>`;w.document.getElementById('placeManualNotice').onclick=async()=>{const title=w.document.getElementById('manualNoticeTitle').value.trim()||'Aviso importante',body=w.document.getElementById('manualNoticeBody').value.trim();if(!body){w.alert('Escribí el aviso.');return}let r=await w.sb.from('admin_alerts').delete().is('shift_id',null).eq('kind','global');if(r.error){w.alert(r.error.message);return}r=await w.sb.from('admin_alerts').insert({shift_id:null,kind:'global',title,body});if(r.error){w.alert(r.error.message);return}w.alert('Aviso colocado ✓');adminPanel(w)};const rm=w.document.getElementById('removeManualNotice');if(rm)rm.onclick=async()=>{const r=await w.sb.from('admin_alerts').delete().is('shift_id',null).eq('kind','global');if(r.error){w.alert(r.error.message);return}w.alert('Aviso retirado ✓');adminPanel(w)};w.document.getElementById('backManualNotice').onclick=()=>w.adminHome()}
-function addAdminButton(w){if(!w.me||w.me.role!=='manager')return;const work=w.document.getElementById('work');if(!work)return;const c=work.querySelector('.card');if(!c||w.document.getElementById('manualNoticeBtn'))return;const b=w.document.createElement('button');b.id='manualNoticeBtn';b.className='sec';b.textContent='Aviso a empleadas';b.onclick=()=>adminPanel(w);c.appendChild(b)}
-function inject(){const w=f.contentWindow;if(!w||!w.document)return;const timer=setInterval(()=>{try{if(w.me){clearInterval(timer);addAdminButton(w);showEmployee(w);const old=w.adminHome;if(typeof old==='function'){w.adminHome=function(){old();setTimeout(()=>addAdminButton(w),0)}}}}catch(e){}},300)}
-</script></body></htm>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YPF TRES SOLES FULL</title>
+<style>html,body,#app{width:100%;height:100%;margin:0;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="app" src="app.html"></iframe>
+<script>
+const frame=document.getElementById('app');
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument;
+  if(!d)return;
+  const css=d.createElement('style');
+  css.textContent=`.manualNoticeOverlay{display:none;position:fixed;inset:0;background:#16384b66;z-index:99999;align-items:center;justify-content:center;padding:20px}.manualNoticeBox{width:min(520px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 60px #16384b45;position:relative}.manualNoticeX{position:absolute;right:10px;top:10px;border:0;border-radius:50%;width:38px;height:38px;padding:0;margin:0;background:#e7f6fd;color:#1979a8;font-size:22px}.manualNoticeBody{white-space:pre-wrap;line-height:1.45;margin-top:10px}`;
+  d.head.appendChild(css);
+  const modal=d.createElement('div');
+  modal.id='manualEmployeeNotice';
+  modal.className='manualNoticeOverlay';
+  modal.innerHTML='<div class="manualNoticeBox"><button class="manualNoticeX" id="manualNoticeClose">×</button><span class="badge">AVISO</span><h2 id="manualEmployeeNoticeTitle"></h2><div id="manualEmployeeNoticeBody" class="manualNoticeBody"></div></div>';
+  d.body.appendChild(modal);
+  d.getElementById('manualNoticeClose').onclick=()=>modal.style.display='none';
+
+  const s=d.createElement('script');
+  s.textContent=`
+(function(){
+async function getGlobalNotice(){
+ const r=await sb.from('admin_alerts').select('id,title,body,created_at').is('shift_id',null).eq('kind','global').order('created_at',{ascending:false}).limit(1).maybeSingle();
+ if(r.error){console.error(r.error);return null} return r.data||null;
+}
+async function showManualEmployeeNotice(){
+ if(!me||me.role==='manager')return;
+ const n=await getGlobalNotice(); if(!n)return;
+ document.getElementById('manualEmployeeNoticeTitle').textContent=n.title||'Aviso';
+ document.getElementById('manualEmployeeNoticeBody').textContent=n.body||'';
+ document.getElementById('manualEmployeeNotice').style.display='flex';
+}
+async function adminManualNotice(){
+ const n=await getGlobalNotice();
+ document.getElementById('work').innerHTML=\`<div class="card"><h2>Aviso a empleadas</h2><p class="muted">Mientras esté activo, aparecerá cada vez que una empleada ingrese a la app.</p>\${n?\`<div class="alert"><b>Aviso activo</b><br>\${esc(n.title)}<div style="white-space:pre-wrap;margin-top:6px">\${esc(n.body)}</div></div>\`:'<div class="okbox">No hay ningún aviso activo.</div>'}<label>Título</label><input id="manualNoticeTitle" value="\${esc(n?.title||'Aviso importante')}"><label>Mensaje</label><textarea id="manualNoticeBody" placeholder="Escribí el aviso..."></textarea><button onclick="placeManualNotice()">Colocar aviso</button>\${n?'<button class="red" onclick="removeManualNotice()">Sacar aviso</button>':''}<button class="sec" onclick="adminHome()">Volver</button></div>\`;
+ if(n)document.getElementById('manualNoticeBody').value=n.body||'';
+}
+window.adminManualNotice=adminManualNotice;
+window.placeManualNotice=async function(){
+ const title=document.getElementById('manualNoticeTitle').value.trim()||'Aviso importante';
+ const body=document.getElementById('manualNoticeBody').value.trim();
+ if(!body){alert('Escribí el aviso.');return}
+ let r=await sb.from('admin_alerts').delete().is('shift_id',null).eq('kind','global'); if(r.error){alert(r.error.message);return}
+ r=await sb.from('admin_alerts').insert({shift_id:null,kind:'global',title,body}); if(r.error){alert(r.error.message);return}
+ alert('Aviso colocado ✓'); adminManualNotice();
+};
+window.removeManualNotice=async function(){
+ const r=await sb.from('admin_alerts').delete().is('shift_id',null).eq('kind','global'); if(r.error){alert(r.error.message);return}
+ alert('Aviso retirado ✓'); adminManualNotice();
+};
+function addManualNoticeButton(){
+ if(!me||me.role!=='manager')return;
+ const work=document.getElementById('work'); if(!work)return;
+ const card=work.querySelector('.card'); if(!card||document.getElementById('manualNoticeBtn'))return;
+ const b=document.createElement('button'); b.id='manualNoticeBtn'; b.className='sec'; b.textContent='Aviso a empleadas'; b.onclick=adminManualNotice; card.appendChild(b);
+}
+const wait=setInterval(()=>{if(!me)return;clearInterval(wait);if(me.role==='manager'){addManualNoticeButton();const originalAdminHome=adminHome;window.adminHome=function(){originalAdminHome();setTimeout(addManualNoticeButton,0)}}else{showManualEmployeeNotice()}},250);
+})();`;
+  d.body.appendChild(s);
+});
+</script>
+</body>
+</html>
