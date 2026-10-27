@@ -5,18 +5,2488 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#62bde9">
 <link rel="manifest" href="manifest.webmanifest">
+
 <title>YPF TRES SOLES FULL</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial;background:#f3faff;color:#16384b}.top{background:linear-gradient(135deg,#49afe1,#86d3f4);color:white;padding:27px 20px 23px;border-radius:0 0 28px 28px}.wrap{max-width:760px;margin:auto;padding:16px}.card{background:#fff;padding:18px;border-radius:20px;margin:13px 0;box-shadow:0 5px 22px #267ca51a}.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.nav button{font-size:13px;padding:12px 6px}button{width:100%;padding:14px;border:0;border-radius:14px;background:#43afe2;color:#fff;font-size:16px;font-weight:700;margin:5px 0}.sec{background:#e7f6fd;color:#1979a8}.ghost{background:#f7fcff;color:#1979a8;border:1px solid #c9eafa}.hide{display:none}.muted{font-size:13px;color:#6c8794}.badge{display:inline-block;background:#e4f5fd;color:#1979a8;padding:5px 10px;border-radius:20px;font-size:12px}input{width:100%;padding:13px;border:1px solid #cce8f5;border-radius:12px;margin:5px 0 10px;font-size:16px;background:#fff}h2{margin:7px 0 12px}</style>
-</head><body>
-<header class="top"><b>YPF TRES SOLES FULL</b><div id="hello" style="margin-top:5px;opacity:.9">Control de stock</div></header>
-<main class="wrap"><section id="auth" class="card"><h2>Ingresar</h2><input id="email" type="email" placeholder="Email"><input id="pass" type="password" placeholder="Contraseña"><button onclick="login()">Ingresar</button><p id="msg" class="muted">Cada persona ingresa con su propia cuenta.</p></section><section id="home" class="hide"><div id="head" class="card"></div><div id="work"></div></section></main>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial;
+background:#f3faff;
+color:#16384b
+}
+
+.top{
+background:linear-gradient(135deg,#49afe1,#86d3f4);
+color:white;
+padding:27px 20px 23px;
+border-radius:0 0 28px 28px
+}
+
+.wrap{
+max-width:760px;
+margin:auto;
+padding:16px
+}
+
+.card{
+background:#fff;
+padding:18px;
+border-radius:20px;
+margin:13px 0;
+box-shadow:0 5px 22px #267ca51a
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:9px
+}
+
+.nav{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:7px
+}
+
+.nav button{
+font-size:13px;
+padding:12px 6px
+}
+
+button{
+width:100%;
+padding:14px;
+border:0;
+border-radius:14px;
+background:#43afe2;
+color:#fff;
+font-size:16px;
+font-weight:700;
+margin:5px 0
+}
+
+button:disabled{
+opacity:.55;
+cursor:not-allowed
+}
+
+.sec{
+background:#e7f6fd;
+color:#1979a8
+}
+
+.red{
+background:#c84c45
+}
+
+.ghost{
+background:#f7fcff;
+color:#1979a8;
+border:1px solid #c9eafa
+}
+
+.green{
+background:#16875d
+}
+
+.hide{display:none}
+
+.muted{
+font-size:13px;
+color:#6c8794
+}
+
+.tiny{
+font-size:12px;
+color:#6c8794
+}
+
+.badge{
+display:inline-block;
+background:#e4f5fd;
+color:#1979a8;
+padding:5px 10px;
+border-radius:20px;
+font-size:12px
+}
+
+.prod{
+padding:13px 0;
+border-top:1px solid #e8f3f8
+}
+
+.stockrow{
+display:grid;
+grid-template-columns:1fr 120px;
+align-items:center;
+gap:10px
+}
+
+.qty{
+font-size:22px;
+font-weight:800;
+text-align:right
+}
+
+.row{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:7px
+}
+
+input,textarea,select{
+width:100%;
+padding:13px;
+border:1px solid #cce8f5;
+border-radius:12px;
+margin:5px 0 10px;
+font-size:16px;
+background:#fff
+}
+
+textarea{min-height:85px}
+
+h2{margin:7px 0 12px}
+h3{margin-top:23px}
+
+.item{
+padding:10px 0;
+border-bottom:1px solid #edf5f9
+}
+
+.alert{
+background:#fff7e7;
+border:1px solid #f0d49a;
+padding:12px;
+border-radius:14px;
+margin:8px 0
+}
+
+.okbox{
+background:#edf9f3;
+border:1px solid #cbe9d8;
+padding:12px;
+border-radius:14px
+}
+
+.money{
+font-size:24px;
+font-weight:800
+}
+
+.click{cursor:pointer}
+
+.prepared{
+background:#f7fcff;
+border:1px solid #d7effa;
+padding:15px;
+border-radius:16px;
+margin:12px 0
+}
+
+.calc{
+background:#edf9f3;
+border:1px solid #cbe9d8;
+padding:11px;
+border-radius:12px;
+margin:5px 0 12px;
+font-weight:700
+}
+
+.bigstock{
+font-size:34px;
+font-weight:800;
+margin:8px 0
+}
+
+.preparedAdmin{
+background:#f7fcff;
+border:1px solid #ccebf8;
+padding:18px;
+border-radius:18px;
+margin:12px 0
+}
+</style>
+</head>
+
+<body>
+
+<header class="top">
+<b>YPF TRES SOLES FULL</b>
+<div id="hello" style="margin-top:5px;opacity:.9">Control de stock</div>
+</header>
+
+<main class="wrap">
+
+<section id="auth" class="card">
+<h2>Ingresar</h2>
+<input id="email" type="email" placeholder="Email">
+<input id="pass" type="password" placeholder="Contraseña">
+<button onclick="login()">Ingresar</button>
+<p id="msg" class="muted">Cada persona ingresa con su propia cuenta.</p>
+</section>
+
+<section id="home" class="hide">
+<div id="head" class="card"></div>
+<div id="work"></div>
+</section>
+
+</main>
+
 <script>
-const sb=supabase.createClient('https://eodbrfdzaizopiihuryz.supabase.co','sb_publishable_DxkNoyp7w7QWM-CjnwP0lA_68CUUfpo');let me=null;const $=x=>document.getElementById(x);const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-async function login(){const r=await sb.auth.signInWithPassword({email:$('email').value,password:$('pass').value});if(r.error){$('msg').textContent=r.error.message;return}boot()}
-async function logout(){await sb.auth.signOut();location.reload()}
-async function boot(){const ur=await sb.auth.getUser();const u=ur.data.user;if(!u)return;$('auth').classList.add('hide');$('home').classList.remove('hide');const pr=await sb.from('profiles').select('*').eq('id',u.id).single();me=pr.data;if(!me){alert('Tu perfil todavía no está disponible.');return}$('hello').textContent='Hola, '+me.full_name;renderHead();home()}
-function renderHead(){const admin=me.role==='manager';$('head').innerHTML=`<span class="badge">${admin?'ADMINISTRACIÓN':'EMPLEADA'}</span><h2>${esc(me.full_name)}</h2>${admin?`<div class="nav"><button onclick="home()">Inicio</button><button class="sec" onclick="location.href='/app-vencimientos.html'">App</button><button class="sec" onclick="location.href='/expiry.html'">Vencimientos</button></div>`:''}<button class="ghost" onclick="logout()">Cerrar sesión</button>`}
-function home(){$('work').innerHTML=`<div class="card"><h2>${me.role==='manager'?'Administración':'Mi turno'}</h2><button onclick="location.href='/app-vencimientos.html'">Abrir aplicación</button><button class="sec" onclick="location.href='/expiry.html'">📅 Vencimientos</button></div>`}
+
+const sb=supabase.createClient(
+'https://eodbrfdzaizopiihuryz.supabase.co',
+'sb_publishable_DxkNoyp7w7QWM-CjnwP0lA_68CUUfpo'
+);
+
+let me=null;
+let shift=null;
+let products=[];
+let shiftUsage={};
+let closingShift=false;
+let preparedProducts=[];
+let changingUsage=false;
+
+const $=x=>document.getElementById(x);
+
+const esc=s=>String(s??'').replace(
+/[&<>"']/g,
+m=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[m])
+);
+
+const fmt=n=>Number(n||0).toLocaleString('es-AR');
+
+async function login(){
+
+const r=await sb.auth.signInWithPassword({
+email:$('email').value,
+password:$('pass').value
+});
+
+if(r.error){
+$('msg').textContent=r.error.message;
+return;
+}
+
 boot();
-</script></body></html>
+}
+
+async function logout(){
+await sb.auth.signOut();
+location.reload();
+}
+
+async function boot(){
+
+try{
+await sb.rpc('close_expired_shifts');
+}catch(e){
+console.error(e);
+}
+
+const userResult=await sb.auth.getUser();
+const u=userResult.data.user;
+
+if(!u)return;
+
+$('auth').classList.add('hide');
+$('home').classList.remove('hide');
+
+const profileResult=await sb
+.from('profiles')
+.select('*')
+.eq('id',u.id)
+.single();
+
+me=profileResult.data;
+
+if(!me){
+alert('Tu perfil todavía no está disponible.');
+return;
+}
+
+await loadProducts();
+await loadPreparedProducts();
+
+const shiftResult=await sb
+.from('shifts')
+.select('*')
+.eq('employee_id',u.id)
+.eq('status','open')
+.maybeSingle();
+
+shift=shiftResult.data;
+
+$('hello').textContent='Hola, '+me.full_name;
+
+renderHead();
+
+if(me.role==='manager'){
+adminHome();
+}else if(shift){
+await loadShiftUsage();
+}else{
+employeeHome();
+}
+}
+
+async function loadProducts(){
+
+const r=await sb
+.from('products')
+.select('*')
+.eq('active',true)
+.order('sort_order');
+
+if(r.error){
+console.error(r.error);
+products=[];
+return;
+}
+
+products=r.data||[];
+}
+
+async function loadPreparedProducts(){
+
+const r=await sb
+.from('prepared_products')
+.select('*')
+.eq('active',true)
+.order('sort_order');
+
+if(r.error){
+console.error(r.error);
+preparedProducts=[];
+return;
+}
+
+preparedProducts=r.data||[];
+}
+
+function renderHead(){
+
+const admin=me.role==='manager';
+
+$('head').innerHTML=`
+
+<span class="badge">
+${admin?'ADMINISTRACIÓN':'EMPLEADA'}
+</span>
+
+<h2>${esc(me.full_name)}</h2>
+
+${admin?`
+
+<div class="nav">
+
+<button onclick="adminHome()">Inicio</button>
+
+<button class="sec" onclick="adminStock()">
+Stock
+</button>
+
+<button class="sec" onclick="adminTurns()">
+Turnos
+</button>
+
+</div>
+
+`:
+
+`${shift
+?'<div class="okbox">Turno abierto · podés salir y volver cuando quieras.</div>'
+:''
+}`}
+
+<button class="ghost" onclick="logout()">
+Cerrar sesión
+</button>
+`;
+}
+
+function employeeHome(){
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Mi turno</h2>
+
+<p class="muted">
+Mañana: 07:00 a 15:15 ·
+Tarde: 15:15 a 22:15.
+</p>
+
+<p class="muted">
+Solo puede haber una empleada con el turno abierto.
+</p>
+
+<button onclick="openShift('morning')">
+Abrir turno Mañana
+</button>
+
+<button onclick="openShift('afternoon')">
+Abrir turno Tarde
+</button>
+
+</div>
+`;
+}
+
+async function openShift(kind){
+
+if(shift){
+renderShift();
+return;
+}
+
+const r=await sb
+.from('shifts')
+.insert({
+employee_id:me.id,
+kind
+})
+.select()
+.single();
+
+if(r.error){
+alert(r.error.message);
+return;
+}
+
+shift=r.data;
+shiftUsage={};
+
+renderHead();
+renderShift();
+}
+
+
+/* ==========================================
+   STOCK DE EMPLEADAS
+   SOLO PUEDEN REGISTRAR CONSUMO / RESTAR
+   ========================================== */
+
+function employeeStock(){
+
+const preparedStockIds=new Set(
+preparedProducts
+.map(x=>x.stock_product_id)
+.filter(Boolean)
+);
+
+const manualProducts=products.filter(p=>{
+
+const linked=preparedStockIds.has(p.id);
+
+const normalizedName=String(p.name||'').trim().toLowerCase();
+
+const medialunas=normalizedName==='medialunas';
+const milk=normalizedName==='leche entera' || normalizedName==='leche descremada';
+
+return !linked && !medialunas && !milk;
+});
+
+return manualProducts.map(p=>{
+
+const used=Number(shiftUsage[p.id]||0);
+const step=Number(p.unit_step||1);
+
+return `
+
+<div class="prod stockrow">
+
+<div>
+
+<b>${esc(p.name)}</b>
+
+<div class="tiny">
+Descuenta ${fmt(step)}
+${esc(p.unit_label||'unidad')} por toque
+</div>
+
+<div class="tiny">
+Usado en este turno:
+<b>${fmt(used)}</b>
+</div>
+
+</div>
+
+<div>
+
+<div class="qty">
+${fmt(p.stock_qty)}
+</div>
+
+<div class="tiny"
+style="text-align:right;margin-bottom:7px">
+Stock actual
+</div>
+
+<button
+class="red"
+id="use_${p.id}"
+onclick="changeUsage('${p.id}')">
+− Restar
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join('');
+}
+
+
+/* ==========================================
+   CARGAR CONSUMO DEL TURNO
+   ========================================== */
+
+async function loadShiftUsage(){
+
+if(!shift?.id){
+shiftUsage={};
+return;
+}
+
+const r=await sb
+.from('shift_stock')
+.select('product_id,used_qty')
+.eq('shift_id',shift.id);
+
+if(r.error){
+console.error(r.error);
+return;
+}
+
+shiftUsage={};
+
+(r.data||[]).forEach(x=>{
+shiftUsage[x.product_id]=Number(x.used_qty||0);
+});
+
+if($('work') && shift){
+renderShift();
+}
+}
+
+
+/* ==========================================
+   EMPLEADA RESTA PRODUCTO
+   ========================================== */
+
+async function changeUsage(id){
+
+if(changingUsage)return;
+
+if(!shift?.id){
+alert('No hay un turno abierto.');
+return;
+}
+
+/* Seguridad adicional en frontend */
+if(me?.role==='manager'){
+alert('Esta función corresponde al turno de empleadas.');
+return;
+}
+
+const product=products.find(p=>p.id===id);
+
+if(!product){
+alert('No se encontró el producto.');
+return;
+}
+
+changingUsage=true;
+
+const button=$('use_'+id);
+
+if(button){
+button.disabled=true;
+button.textContent='Guardando...';
+}
+
+try{
+
+/*
+p_direction = 1 significa:
+AGREGAR una unidad al CONSUMO DEL TURNO.
+
+NO suma stock.
+
+El stock real se descuenta cuando
+se confirma el cierre del turno.
+*/
+
+const r=await sb.rpc(
+'adjust_shift_usage',
+{
+p_product:id,
+p_shift:shift.id,
+p_direction:1
+}
+);
+
+if(r.error){
+throw r.error;
+}
+
+shiftUsage[id]=Number(r.data||0);
+
+renderShift();
+
+}catch(e){
+
+console.error(e);
+
+alert(
+'No se pudo registrar el descuento. '+
+(e.message||'Intentá nuevamente.')
+);
+
+if(button){
+button.disabled=false;
+button.textContent='− Restar';
+}
+
+}finally{
+
+changingUsage=false;
+
+}
+}
+
+
+/* ==========================================
+   ELABORADOS
+   ========================================== */
+
+function preparedHTML(){
+
+if(!preparedProducts.length){
+
+return `
+<p class="muted">
+No hay productos elaborados configurados.
+</p>
+`;
+}
+
+return preparedProducts.map(p=>`
+
+<div class="prepared">
+
+<b>${esc(p.name)}</b>
+
+<p class="tiny">
+Completá las cantidades del turno.
+La aplicación calcula automáticamente lo vendido.
+</p>
+
+<label>
+Cantidad que recibís al comenzar
+</label>
+
+<input
+id="prep_open_${p.id}"
+type="number"
+min="0"
+step="1"
+oninput="updatePreparedCalculation('${p.id}')"
+>
+
+<label>
+Cantidad que cocinás durante el turno
+</label>
+
+<input
+id="prep_made_${p.id}"
+type="number"
+min="0"
+step="1"
+oninput="updatePreparedCalculation('${p.id}')"
+>
+
+<label>
+Cantidad que queda al finalizar
+</label>
+
+<input
+id="prep_close_${p.id}"
+type="number"
+min="0"
+step="1"
+oninput="updatePreparedCalculation('${p.id}')"
+>
+
+<div
+class="calc"
+id="prep_calc_${p.id}">
+Vendidas: —
+</div>
+
+<button
+class="sec"
+onclick="savePreparedProduct('${p.id}')">
+Guardar ${esc(p.name)}
+</button>
+
+</div>
+
+`).join('');
+}
+
+function updatePreparedCalculation(id){
+
+const a=$('prep_open_'+id)?.value;
+const b=$('prep_made_'+id)?.value;
+const c=$('prep_close_'+id)?.value;
+
+const box=$('prep_calc_'+id);
+
+if(!box)return;
+
+if(a===''||b===''||c===''){
+
+box.textContent='Vendidas: —';
+
+return;
+}
+
+const opening=Number(a);
+const made=Number(b);
+const closing=Number(c);
+
+const sold=opening+made-closing;
+
+if(sold<0){
+
+box.textContent='Revisá las cantidades';
+
+return;
+}
+
+box.textContent='Vendidas: '+fmt(sold);
+}
+
+async function loadPreparedCounts(){
+
+if(!shift)return;
+
+const r=await sb
+.from('prepared_shift_counts')
+.select('*')
+.eq('shift_id',shift.id);
+
+if(r.error){
+
+console.error(r.error);
+
+return;
+}
+
+(r.data||[]).forEach(x=>{
+
+const a=$(
+'prep_open_'+x.prepared_product_id
+);
+
+const b=$(
+'prep_made_'+x.prepared_product_id
+);
+
+const c=$(
+'prep_close_'+x.prepared_product_id
+);
+
+if(a)a.value=x.opening_qty;
+
+if(b)b.value=x.made_qty;
+
+if(c && x.closing_qty!=null){
+c.value=x.closing_qty;
+}
+
+updatePreparedCalculation(
+x.prepared_product_id
+);
+
+});
+}
+
+async function savePreparedProduct(id){
+
+if(!shift)return;
+
+const opening=
+Number(
+$('prep_open_'+id)?.value||0
+);
+
+const made=
+Number(
+$('prep_made_'+id)?.value||0
+);
+
+const closeValue=
+$('prep_close_'+id)?.value;
+
+const closing=
+closeValue===''?
+null:
+Number(closeValue);
+
+const r=await sb
+.from('prepared_shift_counts')
+.upsert({
+
+shift_id:shift.id,
+
+prepared_product_id:id,
+
+user_id:me.id,
+
+opening_qty:opening,
+
+made_qty:made,
+
+closing_qty:closing,
+
+updated_at:new Date().toISOString()
+
+},{
+onConflict:'shift_id,prepared_product_id'
+});
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+alert('Guardado ✓');
+}
+
+
+/* ==========================================
+   TURNO EMPLEADA
+   ========================================== */
+
+function renderShift(){
+
+if(!shift)return;
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Turno abierto</h2>
+
+<div class="badge">
+${shift.kind==='morning'?'MAÑANA':'TARDE'}
+</div>
+
+<h3>Productos utilizados</h3>
+
+<p class="muted">
+Tocá − Restar cada vez que utilices un producto.
+El stock real se descuenta al confirmar el cierre del turno.
+</p>
+
+${employeeStock()}
+
+<h3>Elaborados</h3>
+
+${preparedHTML()}
+
+<h3>Leches utilizadas</h3>
+
+<label>Leche entera</label>
+
+<input
+id="wholeMilk"
+type="number"
+min="0"
+step="0.5"
+value="0"
+>
+
+<label>Leche descremada</label>
+
+<input
+id="skimMilk"
+type="number"
+min="0"
+step="0.5"
+value="0"
+>
+
+<h3>Sobrante de caja</h3>
+
+<input
+id="cashSurplus"
+type="number"
+min="0"
+step="1"
+value="0"
+placeholder="Sobrante de caja"
+>
+
+<button
+class="red"
+onclick="showCloseSummary()">
+Cerrar turno
+</button>
+
+</div>
+`;
+
+loadPreparedCounts();
+loadClosingFields();
+}
+
+
+async function loadClosingFields(){
+
+if(!shift)return;
+
+const [milkR,shiftR]=await Promise.all([
+
+sb
+.from('milk_usage')
+.select('*')
+.eq('shift_id',shift.id)
+.maybeSingle(),
+
+sb
+.from('shifts')
+.select('cash_surplus')
+.eq('id',shift.id)
+.single()
+
+]);
+
+if($('wholeMilk')){
+
+$('wholeMilk').value=
+milkR.data?.whole_boxes||0;
+
+}
+
+if($('skimMilk')){
+
+$('skimMilk').value=
+milkR.data?.skim_boxes||0;
+
+}
+
+if($('cashSurplus')){
+
+$('cashSurplus').value=
+shiftR.data?.cash_surplus||0;
+
+}
+}
+
+async function saveAllPreparedBeforeSummary(){
+
+for(const p of preparedProducts){
+
+const a=$('prep_open_'+p.id);
+const b=$('prep_made_'+p.id);
+const c=$('prep_close_'+p.id);
+
+if(!a||!b||!c)continue;
+
+if(c.value===''){
+
+throw new Error(
+`Completá la cantidad final de ${p.name}.`
+);
+
+}
+
+const opening=Number(a.value||0);
+const made=Number(b.value||0);
+const closing=Number(c.value);
+
+if(opening+made-closing<0){
+
+throw new Error(
+`Revisá las cantidades de ${p.name}.`
+);
+
+}
+
+const r=await sb
+.from('prepared_shift_counts')
+.upsert({
+
+shift_id:shift.id,
+
+prepared_product_id:p.id,
+
+user_id:me.id,
+
+opening_qty:opening,
+
+made_qty:made,
+
+closing_qty:closing,
+
+updated_at:new Date().toISOString()
+
+},{
+onConflict:'shift_id,prepared_product_id'
+});
+
+if(r.error){
+throw r.error;
+}
+
+}
+}
+
+async function showCloseSummary(){
+
+if(closingShift||!shift)return;
+
+try{
+
+await saveAllPreparedBeforeSummary();
+
+
+const whole=Number($('wholeMilk')?.value||0);
+const skim=Number($('skimMilk')?.value||0);
+const cash=Number($('cashSurplus')?.value||0);
+
+const usageRows=products
+
+.filter(
+p=>Number(shiftUsage[p.id]||0)>0
+)
+
+.map(p=>`
+
+<div class="item">
+
+${esc(p.name)}
+
+<b style="float:right">
+${fmt(shiftUsage[p.id])}
+</b>
+
+</div>
+
+`)
+
+.join('');
+
+const preparedRows=
+preparedProducts.map(p=>{
+
+const a=
+Number(
+$('prep_open_'+p.id)?.value||0
+);
+
+const b=
+Number(
+$('prep_made_'+p.id)?.value||0
+);
+
+const c=
+Number(
+$('prep_close_'+p.id)?.value||0
+);
+
+return `
+
+<div class="item">
+
+${esc(p.name)}
+
+<b style="float:right">
+${fmt(a+b-c)} vendidas
+</b>
+
+</div>
+
+`;
+
+}).join('');
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>
+Resumen para cerrar turno
+</h2>
+
+<p class="muted">
+Revisá todo antes de confirmar.
+Hasta que no confirmes, el stock real no se modifica.
+</p>
+
+<h3>Productos utilizados</h3>
+
+${usageRows||
+'<p class="muted">No se cargaron productos.</p>'}
+
+<h3>Elaborados</h3>
+
+${preparedRows||
+'<p class="muted">Sin elaborados.</p>'}
+
+<h3>Leches utilizadas</h3>
+<div class="item">Leche entera <b style="float:right">${fmt(whole)}</b></div>
+<div class="item">Leche descremada <b style="float:right">${fmt(skim)}</b></div>
+
+<h3>Sobrante de caja</h3>
+
+<div class="money">
+$ ${fmt(cash)}
+</div>
+
+<button
+id="confirmCloseBtn"
+class="red"
+onclick="closeShift(${whole},${skim},${cash})">
+Confirmar y cerrar turno
+</button>
+
+<button
+class="sec"
+onclick="renderShift()">
+Volver y corregir
+</button>
+
+</div>
+`;
+
+}catch(e){
+
+alert(
+e.message||String(e)
+);
+
+}
+}
+
+async function closeShift(whole,skim,cash){
+
+if(closingShift||!shift)return;
+
+closingShift=true;
+
+const btn=$('confirmCloseBtn');
+
+if(btn){
+
+btn.disabled=true;
+
+btn.textContent=
+'Cerrando turno...';
+
+}
+
+try{
+
+const r=await sb.rpc(
+'close_shift_atomic',
+{
+
+p_shift:shift.id,
+
+p_whole:Number(whole||0),
+
+p_skim:Number(skim||0),
+
+p_cash:Number(cash||0)
+
+}
+);
+
+if(r.error){
+throw r.error;
+}
+
+const verify=await sb
+.from('shifts')
+.select('status,closed_at')
+.eq('id',shift.id)
+.single();
+
+if(verify.error){
+throw verify.error;
+}
+
+if(verify.data?.status!=='closed'){
+
+throw new Error(
+'El cierre no fue confirmado por la base de datos.'
+);
+
+}
+
+shift=null;
+shiftUsage={};
+
+await loadProducts();
+
+renderHead();
+
+employeeHome();
+
+alert(
+'Turno cerrado correctamente ✓'
+);
+
+}catch(e){
+
+alert(
+'No se pudo cerrar el turno. No se aplicó el cierre. '+
+(e.message||'')
+);
+
+if(btn){
+
+btn.disabled=false;
+
+btn.textContent=
+'Confirmar y cerrar turno';
+
+}
+
+}finally{
+
+closingShift=false;
+
+}
+}
+
+
+/* ==========================================
+   ADMINISTRACIÓN
+   ========================================== */
+
+async function adminHome(){
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Administración</h2>
+
+<button onclick="adminStock()">
+Control de stock
+</button>
+
+<button
+class="sec"
+onclick="adminPrepared()">
+Elaborados
+</button>
+
+<button
+class="sec"
+onclick="adminProducts()">
+Productos
+</button>
+
+<button
+class="sec"
+onclick="adminTurns()">
+Turnos
+</button>
+
+<button
+class="sec"
+onclick="adminAlerts()">
+Alertas
+</button>
+
+</div>
+
+<div id="dash"></div>
+`;
+
+adminAlerts(true);
+}
+
+function adminPrepared(){
+
+const linked=
+preparedProducts
+
+.map(pp=>({
+
+...pp,
+
+stock:
+products.find(
+p=>p.id===pp.stock_product_id
+)
+
+}))
+
+.filter(x=>x.stock);
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Elaborados</h2>
+
+<p class="muted">
+Administración del stock de productos elaborados.
+</p>
+
+${linked.map(p=>`
+
+<div class="preparedAdmin">
+
+<b>${esc(p.name)}</b>
+
+<div class="bigstock">
+${fmt(p.stock.stock_qty)}
+</div>
+
+<div class="tiny">
+Stock actual
+</div>
+
+<input
+id="prepstock_${p.stock.id}"
+type="number"
+min="0"
+step="${p.stock.unit_step||1}"
+placeholder="Cantidad"
+>
+
+<div class="row">
+
+<button
+onclick="addPreparedStock('${p.stock.id}')">
++ Cargar
+</button>
+
+<button
+class="sec"
+onclick="discountPreparedStock('${p.stock.id}')">
+− Descontar
+</button>
+
+</div>
+
+</div>
+
+`).join('')}
+
+<button
+class="green"
+onclick="adminHome()">
+Volver
+</button>
+
+</div>
+`;
+}
+
+async function addPreparedStock(id){
+
+const el=$(
+'prepstock_'+id
+);
+
+const v=
+Number(el?.value||0);
+
+if(!v||v<=0){
+
+alert(
+'Ingresá una cantidad válida.'
+);
+
+return;
+}
+
+const r=await sb.rpc(
+'manager_adjust_stock',
+{
+
+p_product:id,
+
+p_delta:v
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+adminPrepared();
+}
+
+async function discountPreparedStock(id){
+
+const el=$(
+'prepstock_'+id
+);
+
+const v=
+Number(el?.value||0);
+
+if(!v||v<=0){
+
+alert(
+'Ingresá la cantidad que querés descontar.'
+);
+
+return;
+}
+
+if(!confirm(
+`¿Descontar ${fmt(v)} unidades del stock de este elaborado?`
+)){
+return;
+}
+
+const r=await sb.rpc(
+'manager_adjust_stock',
+{
+
+p_product:id,
+
+p_delta:-v
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+adminPrepared();
+}
+
+function adminStock(){
+
+const preparedIds=new Set(
+
+preparedProducts
+.map(x=>x.stock_product_id)
+.filter(Boolean)
+
+);
+
+const normalProducts=
+products.filter(
+p=>!preparedIds.has(p.id)
+);
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Control de stock</h2>
+
+<p class="muted">
+Stock general.
+Los elaborados se administran desde la sección Elaborados.
+</p>
+
+${normalProducts.map(p=>`
+
+<div class="prod">
+
+<b>${esc(p.name)}</b>
+
+<div class="tiny">
+
+Stock actual:
+${fmt(p.stock_qty)}
+
+·
+
+${esc(p.unit_label)}
+
+</div>
+
+<input
+id="add${p.id}"
+type="number"
+min="0"
+step="${p.unit_step}"
+placeholder="Cantidad"
+>
+
+<div class="row">
+
+<button
+onclick="addStock('${p.id}')">
++ Cargar
+</button>
+
+<button
+class="sec"
+onclick="discountStock('${p.id}')">
+− Descontar
+</button>
+
+</div>
+
+</div>
+
+`).join('')}
+
+<button
+class="green"
+onclick="adminHome()">
+Cerrar control de stock
+</button>
+
+</div>
+`;
+}
+
+async function addStock(id){
+
+const input=$(
+'add'+id
+);
+
+const v=
+Number(input?.value||0);
+
+if(!v||v<=0){
+
+alert(
+'Ingresá una cantidad válida'
+);
+
+return;
+}
+
+const r=await sb.rpc(
+'manager_adjust_stock',
+{
+
+p_product:id,
+
+p_delta:v
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+adminStock();
+}
+
+async function discountStock(id){
+
+const p=
+products.find(
+x=>x.id===id
+);
+
+if(!p)return;
+
+const input=$(
+'add'+id
+);
+
+const v=
+Number(input?.value||0);
+
+if(!v||v<=0){
+
+alert(
+'Ingresá la cantidad que querés descontar'
+);
+
+return;
+}
+
+if(!confirm(
+`¿Descontar ${fmt(v)} ${p.unit_label||'unidad'} de ${p.name}?`
+)){
+return;
+}
+
+const r=await sb.rpc(
+'manager_adjust_stock',
+{
+
+p_product:id,
+
+p_delta:-v
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+adminStock();
+}
+
+function adminProducts(){
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Administrar productos</h2>
+
+<button onclick="newProductForm()">
++ Nuevo producto
+</button>
+
+${products.map(p=>`
+
+<div class="prod">
+
+<b>${esc(p.name)}</b>
+
+<div class="tiny">
+
+Stock ${fmt(p.stock_qty)}
+
+· descuenta ${p.unit_step}
+
+${esc(p.unit_label)}
+
+</div>
+
+<button
+class="red"
+onclick="deactivateProduct('${p.id}','${esc(p.name)}')">
+Eliminar / desactivar
+</button>
+
+</div>
+
+`).join('')}
+
+</div>
+`;
+}
+
+function newProductForm(){
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Nuevo producto</h2>
+
+<label>Nombre</label>
+
+<input
+id="pn"
+placeholder="Ej: Ciabatta Plus"
+>
+
+<label>Stock inicial</label>
+
+<input
+id="ps"
+type="number"
+min="0"
+step="0.5"
+value="0"
+>
+
+<label>
+Cantidad que descuenta cada toque
+</label>
+
+<input
+id="pst"
+type="number"
+min="0.01"
+step="0.5"
+value="1"
+>
+
+<label>Unidad</label>
+
+<input
+id="pu"
+value="unidad"
+placeholder="unidad / media palta / porción"
+>
+
+<button onclick="createProduct()">
+Crear producto
+</button>
+
+<button
+class="sec"
+onclick="adminProducts()">
+Cancelar
+</button>
+
+</div>
+`;
+}
+
+async function createProduct(){
+
+const n=
+$('pn').value.trim();
+
+if(!n){
+
+alert(
+'Poné el nombre.'
+);
+
+return;
+}
+
+const r=await sb.rpc(
+'manager_create_product',
+{
+
+p_name:n,
+
+p_stock:
+Number($('ps').value||0),
+
+p_step:
+Number($('pst').value||1),
+
+p_unit:
+$('pu').value.trim()||
+'unidad'
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+alert(
+'Producto creado ✓'
+);
+
+adminProducts();
+}
+
+async function deactivateProduct(id,name){
+
+if(!confirm(
+`¿Desactivar ${name}? No se borra su historial.`
+)){
+return;
+}
+
+const r=await sb.rpc(
+'manager_set_product_active',
+{
+
+p_id:id,
+
+p_active:false
+
+}
+);
+
+if(r.error){
+
+alert(r.error.message);
+
+return;
+}
+
+await loadProducts();
+
+adminProducts();
+}
+
+
+/* ==========================================
+   TURNOS ADMIN
+   ========================================== */
+
+async function adminTurns(){
+
+const r=await sb
+.from('shifts')
+.select('*,profiles(full_name)')
+.order(
+'opened_at',
+{ascending:false}
+)
+.limit(80);
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Turnos</h2>
+
+${(r.data||[]).map(s=>`
+
+<div
+class="prod click"
+onclick="turnDetail('${s.id}')">
+
+<b>
+${esc(
+s.profiles?.full_name||
+'Empleado'
+)}
+</b>
+
+·
+
+${s.kind==='morning'
+?'Mañana'
+:'Tarde'}
+
+<div class="tiny">
+
+${new Date(
+s.opened_at
+).toLocaleString('es-AR')}
+
+·
+
+${s.status==='closed'
+?'Cerrado'
+:'ABIERTO'}
+
+</div>
+
+</div>
+
+`).join('')
+||
+'<p class="muted">Sin turnos.</p>'}
+
+</div>
+`;
+}
+
+async function turnDetail(id){
+
+const [
+sr,
+mr,
+pr,
+ur,
+nr,
+mvr
+]=await Promise.all([
+
+sb
+.from('shifts')
+.select('*,profiles(full_name)')
+.eq('id',id)
+.single(),
+
+sb
+.from('milk_usage')
+.select('*')
+.eq('shift_id',id)
+.maybeSingle(),
+
+sb
+.from('prepared_shift_counts')
+.select(
+'*,prepared_products(name)'
+)
+.eq('shift_id',id)
+.order('updated_at'),
+
+sb
+.from('unbilled_items')
+.select('*')
+.eq('shift_id',id)
+.order('created_at'),
+
+sb
+.from('shift_notes')
+.select('*')
+.eq('shift_id',id)
+.maybeSingle(),
+
+sb
+.from('stock_movements')
+.select(
+'*,products(name,unit_label)'
+)
+.eq('shift_id',id)
+.order('created_at')
+
+]);
+
+const s=sr.data;
+
+if(!s)return;
+
+const prepared=
+pr.data||[];
+
+const preparedText=
+prepared.length
+
+?prepared.map(x=>{
+
+const sold=
+
+x.sold_qty!=null
+
+?Number(x.sold_qty)
+
+:
+
+x.closing_qty!=null
+
+?Number(x.opening_qty)
++Number(x.made_qty)
+-Number(x.closing_qty)
+
+:null;
+
+return `
+
+<div class="preparedAdmin">
+
+<b>
+${esc(
+x.prepared_products?.name||
+'Elaborado'
+)}
+</b>
+
+<div class="tiny">
+
+Inicial:
+${fmt(x.opening_qty)}
+
+· Cocinadas:
+${fmt(x.made_qty)}
+
+· Final:
+
+${x.closing_qty==null
+?'—'
+:fmt(x.closing_qty)}
+
+</div>
+
+<div style="margin-top:8px">
+
+Vendidas:
+
+<b>
+${sold==null
+?'—'
+:fmt(sold)}
+</b>
+
+</div>
+
+</div>
+
+`;
+
+}).join('')
+
+:
+'<p class="muted">Sin datos de elaborados.</p>';
+
+const moves=
+(mvr.data||[])
+.filter(
+x=>Number(x.delta)<0
+);
+
+const totals={};
+
+moves.forEach(x=>{
+
+const n=
+x.products?.name||
+'Producto';
+
+totals[n]=
+(totals[n]||0)
++
+Math.abs(
+Number(x.delta)
+);
+
+});
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<button
+class="sec"
+onclick="adminTurns()">
+← Volver
+</button>
+
+<h2>
+${esc(
+s.profiles?.full_name||
+'Turno'
+)}
+</h2>
+
+<div class="badge">
+
+${s.kind==='morning'
+?'MAÑANA'
+:'TARDE'}
+
+·
+
+${s.status==='closed'
+?'CERRADO'
+:'ABIERTO'}
+
+</div>
+
+<h3>Elaborados</h3>
+
+${preparedText}
+
+<h3>Stock consumido</h3>
+
+${Object.entries(totals)
+
+.map(([n,v])=>`
+
+<div class="item">
+
+${esc(n)}:
+
+<b>${fmt(v)}</b>
+
+</div>
+
+`).join('')
+
+||
+
+'<p class="muted">Sin descuentos.</p>'}
+
+<h3>Leches</h3>
+
+<p>
+
+Entera:
+
+<b>
+${fmt(
+mr.data?.whole_boxes
+)}
+</b>
+
+·
+
+Descremada:
+
+<b>
+${fmt(
+mr.data?.skim_boxes
+)}
+</b>
+
+</p>
+
+<h3>Sobrante de caja</h3>
+
+<div class="money">
+$ ${fmt(s.cash_surplus)}
+</div>
+
+<h3>No facturados</h3>
+
+${(ur.data||[])
+
+.map(x=>`
+
+<div class="item">
+
+${esc(x.product_name)}
+
+· código
+
+${esc(x.product_code)}
+
+·
+
+${(x.sold_at||'').slice(0,5)}
+
+</div>
+
+`).join('')
+
+||
+
+'<p class="muted">Ninguno.</p>'}
+
+<h3>Notas</h3>
+
+<p>
+
+${nr.data?.no_notes
+
+?'No hay notas'
+
+:esc(
+nr.data?.note||
+'Sin cargar'
+)}
+
+</p>
+
+</div>
+`;
+}
+
+
+/* ==========================================
+   ALERTAS
+   ========================================== */
+
+async function adminAlerts(inDash=false){
+
+const r=await sb
+.from('shifts')
+.select('*,profiles(full_name)')
+.eq('status','closed')
+.order(
+'closed_at',
+{ascending:false}
+)
+.limit(15);
+
+let alerts=[];
+
+for(const s of (r.data||[])){
+
+if(Number(s.cash_surplus)>0){
+
+alerts.push(`
+
+<div class="alert">
+
+<b>
+
+Diferencia de caja ·
+
+${esc(
+s.profiles?.full_name||
+''
+)}
+
+</b>
+
+<br>
+
+Sobrante:
+
+$ ${fmt(s.cash_surplus)}
+
+</div>
+
+`);
+
+}
+
+}
+
+const cr=await sb
+.from('prepared_shift_counts')
+.select(
+'*,prepared_products(name),shifts(opened_at,status,employee_id,profiles(full_name))'
+)
+.order(
+'updated_at',
+{ascending:false}
+)
+.limit(100);
+
+const grouped={};
+
+(cr.data||[])
+
+.filter(
+x=>x.shifts?.status==='closed'
+)
+
+.forEach(x=>{
+
+const key=
+x.prepared_product_id;
+
+if(!grouped[key]){
+
+grouped[key]=[];
+
+}
+
+grouped[key].push(x);
+
+});
+
+Object.values(grouped)
+
+.forEach(arr=>{
+
+arr.sort(
+(a,b)=>
+new Date(a.shifts.opened_at)
+-
+new Date(b.shifts.opened_at)
+);
+
+for(
+let i=1;
+i<arr.length;
+i++
+){
+
+const prev=arr[i-1];
+const cur=arr[i];
+
+if(
+
+prev.closing_qty!=null &&
+
+cur.opening_qty!=null &&
+
+Number(prev.closing_qty)!==
+Number(cur.opening_qty)
+
+){
+
+const d=
+Number(prev.closing_qty)
+-
+Number(cur.opening_qty);
+
+alerts.push(`
+
+<div class="alert">
+
+<b>
+
+Diferencia de
+
+${esc(
+cur.prepared_products?.name||
+'elaborado'
+)}
+
+</b>
+
+<br>
+
+${esc(
+prev.shifts.profiles?.full_name||
+'Turno anterior'
+)}
+
+dejó
+
+${fmt(prev.closing_qty)};
+
+${esc(
+cur.shifts.profiles?.full_name||
+'turno siguiente'
+)}
+
+recibió
+
+${fmt(cur.opening_qty)}.
+
+<b>
+
+${d>0
+?'Faltan '+fmt(d)
+:'Sobran '+fmt(Math.abs(d))}
+
+</b>
+
+</div>
+
+`);
+
+}
+
+}
+
+});
+
+const html=
+alerts.join('')
+
+||
+
+'<div class="okbox">No hay alertas pendientes en los últimos cierres.</div>';
+
+if(inDash){
+
+const d=$('dash');
+
+if(d){
+
+d.innerHTML=`
+
+<div class="card">
+
+<h2>Alertas recientes</h2>
+
+${html}
+
+</div>
+
+`;
+
+}
+
+}else{
+
+$('work').innerHTML=`
+
+<div class="card">
+
+<h2>Alertas</h2>
+
+${html}
+
+</div>
+
+`;
+
+}
+
+}
+
+
+/* ==========================================
+   CIERRE AUTOMÁTICO
+   ========================================== */
+
+setInterval(
+
+async()=>{
+
+if(
+!me||
+me.role==='manager'||
+!shift
+){
+return;
+}
+
+try{
+
+await sb.rpc(
+'close_expired_shifts'
+);
+
+const r=await sb
+.from('shifts')
+.select('*')
+.eq('id',shift.id)
+.single();
+
+if(
+r.data?.status==='closed'
+){
+
+shift=null;
+shiftUsage={};
+
+alert(
+'El turno se cerró automáticamente porque terminó el horario.'
+);
+
+renderHead();
+
+employeeHome();
+
+}
+
+}catch(e){
+
+console.error(e);
+
+}
+
+},
+
+60000
+
+);
+
+
+/* ==========================================
+   INICIO
+   ========================================== */
+
+boot();
+
+</script>
+
+</body>
+</html>
