@@ -495,7 +495,7 @@ const linked=preparedStockIds.has(p.id);
 const normalizedName=String(p.name||'').trim().toLowerCase();
 
 const medialunas=normalizedName==='medialunas';
-const milk=normalizedName==='leche entera' || normalizedName==='leche descremada';
+const milk=['leche entera','leche descremada','leche de almendras'].includes(normalizedName);
 
 return !linked && !medialunas && !milk;
 });
@@ -917,6 +917,13 @@ ${preparedHTML()}
 
 <h3>Leches utilizadas</h3>
 
+<div class="item" style="background:#f7fcff;padding:12px;border-radius:12px;margin:8px 0">
+<b>Leche de almendras</b>
+<p class="muted">Cada toque registra ½ caja utilizada en este turno. Se descuenta del stock al cerrar el turno.</p>
+<div>Utilizadas: <b>${fmt(shiftUsage[products.find(p=>p.name.toLowerCase().trim()==='leche de almendras')?.id]||0)}</b> cajas</div>
+<button class="sec" onclick="useAlmondMilk()">+ ½ caja de almendras</button>
+</div>
+
 <label>Leche entera</label>
 
 <input
@@ -961,6 +968,12 @@ loadPreparedCounts();
 loadClosingFields();
 }
 
+
+async function useAlmondMilk(){
+const product=products.find(p=>p.name.toLowerCase().trim()==='leche de almendras');
+if(!product)return alert('Todavía no está configurada la leche de almendras.');
+await changeUsage(product.id);
+}
 
 async function loadClosingFields(){
 
