@@ -495,7 +495,8 @@ const linked=preparedStockIds.has(p.id);
 const normalizedName=String(p.name||'').trim().toLowerCase();
 
 const medialunas=normalizedName==='medialunas';
-return !linked && !medialunas;
+const bread= /^pan(?:\\s|$)/i.test(normalizedName);
+return !linked && !medialunas && !bread;
 });
 
 return manualProducts.map(p=>{
