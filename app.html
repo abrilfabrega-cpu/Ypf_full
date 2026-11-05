@@ -1207,6 +1207,19 @@ async function closeShift(whole,skim,cash){
 
 if(closingShift||!shift)return;
 
+try{
+const [cc,cr,ca]=await Promise.all([
+sb.from('cigarette_catalog').select('id').eq('active',true),
+sb.from('cigarette_counts').select('cigarette_id,received,incoming,remaining').eq('shift_id',shift.id),
+sb.from('cigarette_shift_cash').select('actual_amount').eq('shift_id',shift.id).maybeSingle()
+]);
+if(cc.error||cr.error||ca.error)throw new Error('No se pudo verificar el control de cigarrillos.');
+const ids=new Set((cr.data||[]).filter(x=>x.received!==null&&x.remaining!==null&&x.received+x.incoming>=x.remaining).map(x=>x.cigarette_id));
+if((cc.data||[]).some(x=>!ids.has(x.id))||ca.data?.actual_amount===null||ca.data?.actual_amount===undefined){
+alert('Antes de cerrar el turno, completá el control de cigarrillos y la plata real. Entrá a 🚬 Cigarrillos desde Mi turno.');
+return;
+}
+}catch(e){alert(e.message);return;}
 closingShift=true;
 
 const btn=$('confirmCloseBtn');
