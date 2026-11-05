@@ -495,9 +495,7 @@ const linked=preparedStockIds.has(p.id);
 const normalizedName=String(p.name||'').trim().toLowerCase();
 
 const medialunas=normalizedName==='medialunas';
-const milk=['leche entera','leche descremada','leche de almendras'].includes(normalizedName);
-
-return !linked && !medialunas && !milk;
+return !linked && !medialunas;
 });
 
 return manualProducts.map(p=>{
@@ -915,35 +913,6 @@ ${employeeStock()}
 
 ${preparedHTML()}
 
-<h3>Leches utilizadas</h3>
-
-<div class="item" style="background:#f7fcff;padding:12px;border-radius:12px;margin:8px 0">
-<b>Leche de almendras</b>
-<p class="muted">Cada toque registra ½ caja utilizada en este turno. Se descuenta del stock al cerrar el turno.</p>
-<div>Utilizadas: <b>${fmt(shiftUsage[products.find(p=>p.name.toLowerCase().trim()==='leche de almendras')?.id]||0)}</b> cajas</div>
-<button class="sec" onclick="useAlmondMilk()">+ ½ caja de almendras</button>
-</div>
-
-<label>Leche entera</label>
-
-<input
-id="wholeMilk"
-type="number"
-min="0"
-step="0.5"
-value="0"
->
-
-<label>Leche descremada</label>
-
-<input
-id="skimMilk"
-type="number"
-min="0"
-step="0.5"
-value="0"
->
-
 <h3>Sobrante de caja</h3>
 
 <input
@@ -969,45 +938,11 @@ loadClosingFields();
 }
 
 
-async function useAlmondMilk(){
-const product=products.find(p=>p.name.toLowerCase().trim()==='leche de almendras');
-if(!product)return alert('Todavía no está configurada la leche de almendras.');
-await changeUsage(product.id);
-}
-
 async function loadClosingFields(){
 
 if(!shift)return;
 
-const [milkR,shiftR]=await Promise.all([
-
-sb
-.from('milk_usage')
-.select('*')
-.eq('shift_id',shift.id)
-.maybeSingle(),
-
-sb
-.from('shifts')
-.select('cash_surplus')
-.eq('id',shift.id)
-.single()
-
-]);
-
-if($('wholeMilk')){
-
-$('wholeMilk').value=
-milkR.data?.whole_boxes||0;
-
-}
-
-if($('skimMilk')){
-
-$('skimMilk').value=
-milkR.data?.skim_boxes||0;
-
-}
+const shiftR=await sb.from('shifts').select('cash_surplus').eq('id',shift.id).single();
 
 if($('cashSurplus')){
 
@@ -1085,8 +1020,8 @@ try{
 await saveAllPreparedBeforeSummary();
 
 
-const whole=Number($('wholeMilk')?.value||0);
-const skim=Number($('skimMilk')?.value||0);
+const whole=0;
+const skim=0;
 const cash=Number($('cashSurplus')?.value||0);
 
 const usageRows=products
@@ -1167,10 +1102,6 @@ ${usageRows||
 
 ${preparedRows||
 '<p class="muted">Sin elaborados.</p>'}
-
-<h3>Leches utilizadas</h3>
-<div class="item">Leche entera <b style="float:right">${fmt(whole)}</b></div>
-<div class="item">Leche descremada <b style="float:right">${fmt(skim)}</b></div>
 
 <h3>Sobrante de caja</h3>
 
