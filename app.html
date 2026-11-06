@@ -888,9 +888,11 @@ alert('Guardado ✓');
    TURNO EMPLEADA
    ========================================== */
 
-function renderShift(){
+async function renderShift(){
 
 if(!shift)return;
+
+await loadPreparedProducts();
 
 $('work').innerHTML=`
 
