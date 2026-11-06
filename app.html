@@ -496,8 +496,8 @@ const linked=preparedStockIds.has(p.id);
 const normalizedName=String(p.name||'').trim().toLowerCase();
 
 const medialunas=normalizedName==='medialunas';
-const bread= /^pan(?:\\s|$)/i.test(normalizedName);
-return !linked && !medialunas && !bread;
+const bread= /^pan(?:\s|$)/i.test(normalizedName);
+return !linked && !medialunas && !bread && !['leche entera','leche descremada','leche de almendras'].includes(normalizedName);
 });
 
 return manualProducts.map(p=>{
@@ -888,7 +888,7 @@ alert('Guardado ✓');
    TURNO EMPLEADA
    ========================================== */
 
-async function renderShift(){
+async async function renderShift(){
 
 if(!shift)return;
 
@@ -917,7 +917,7 @@ ${employeeStock()}
 
 ${preparedHTML()}
 
-<h3>Sobrante de caja</h3>
+<h3>Leches utilizadas</h3>\n<p class="muted">Ingresá el total de cajas utilizadas en este turno, en pasos de 0,5. Confirmá el registro. El stock se descuenta al cerrar el turno.</p>\n${milkQuantityHTML()}\n\n<h3>Sobrante de caja</h3>
 
 <input
 id="cashSurplus"
@@ -2482,6 +2482,33 @@ async function adminNonconforming(){
  <button class="sec" onclick="adminHome()">Volver</button></div>`;
 }
 
+function milkQuantityHTML(){
+ return products.filter(p=>['leche entera','leche descremada','leche de almendras'].includes(String(p.name).trim().toLowerCase())).map(p=>{
+ const used=Number(shiftUsage[p.id]||0);
+ return `<div class="prod stockrow"><div><b>${esc(p.name)}</b><div class="tiny">Registradas en este turno: <b>${fmt(used)}</b> cajas</div><div class="tiny">Stock: ${fmt(p.stock_qty)} cajas</div></div><div><input id="milk_qty_${p.id}" type="number" min="0" step="0.5" inputmode="decimal" value="${used}" style="width:110px" aria-label="Cantidad de ${esc(p.name)}"><button class="red" id="milk_save_${p.id}" onclick="saveMilkQuantity('${p.id}')">Descontar</button></div></div>`;
+ }).join('');
+}
+async function saveMilkQuantity(id){
+ if(changingUsage||!shift?.id)return;
+ const p=products.find(x=>x.id===id);
+ const field=$('milk_qty_'+id);
+ if(!p||!field)return;
+ const raw=field.value.trim().replace(',','.');
+ const qty=Number(raw);
+ if(!raw||!Number.isFinite(qty)||qty<0||Math.abs(qty*2-Math.round(qty*2))>0.000001){alert('Ingresá una cantidad válida: 0, 0,5, 1, 1,5, etc.');return;}
+ const old=Number(shiftUsage[id]||0),difference=qty-old;
+ if(difference===0){alert('Esa cantidad ya está registrada.');return;}
+ const msg=difference>0?'¿Confirmás registrar '+fmt(difference)+' cajas adicionales de '+p.name+'? Total del turno: '+fmt(qty)+'.':'¿Confirmás corregir '+p.name+' de '+fmt(old)+' a '+fmt(qty)+' cajas?';
+ if(!confirm(msg+' El stock se actualizará al cerrar el turno.'))return;
+ changingUsage=true;const btn=$('milk_save_'+id);if(btn)btn.disabled=true;
+ try{
+ const r=await sb.rpc('set_milk_shift_usage',{p_product:id,p_shift:shift.id,p_quantity:qty});
+ if(r.error)throw r.error;
+ shiftUsage[id]=Number(r.data);
+ renderShift();
+ }catch(e){alert('No se pudo guardar: '+(e.message||e));if(btn)btn.disabled=false;}
+ finally{changingUsage=false;}
+}
 </script>
 
 </body>
