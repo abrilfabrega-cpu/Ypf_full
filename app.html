@@ -6,56 +6,9 @@
 <meta name="theme-color" content="#62bde9">
 <link rel="manifest" href="manifest.webmanifest">
 
-<title>YPF TRES SOLES FULL</title>
+<title>YPF SANTA TERESITA FULL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-/* Productos no conformes: registro informativo, sin descontar stock. */
-function nonconformingForm(){
- if(!shift?.id)return alert('Abrí un turno para registrar un producto.');
- const choices=products.map(p=>'<option value="'+esc(p.name)+'"></option>').join('');
- $('work').innerHTML=`<div class="card"><h2>⚠️ Productos no conformes</h2>
- <p class="muted">Registrá productos rotos, vencidos o que salieron mal. Esto NO descuenta stock.</p>
- <label>Producto</label><input id="nc_product" list="nc_options" placeholder="Nombre del producto"><datalist id="nc_options">${choices}</datalist>
- <label>Cantidad</label><input id="nc_qty" type="number" min="0.5" step="any" placeholder="Ej.: 5">
- <label>Motivo</label><select id="nc_reason" style="width:100%;padding:13px;border-radius:12px;border:1px solid #c9eafa">
- <option>Roto</option><option>Mal preparado</option><option>Quemado</option><option>Vencido</option><option>Otro</option></select>
- <label>Detalle (opcional)</label><textarea id="nc_notes" rows="3" style="width:100%;padding:12px;border-radius:12px" placeholder="Ej.: 5 sándwiches salieron torcidos"></textarea>
- <label>Foto (opcional, hasta 5 MB)</label><input id="nc_photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
- <button id="nc_save" onclick="saveNonconforming()">Guardar aviso</button>
- <button class="sec" onclick="renderShift()">Volver al turno</button></div>`;
-}
-async function saveNonconforming(){
- const name=$('nc_product').value.trim(),qty=Number($('nc_qty').value),reason=$('nc_reason').value,notes=$('nc_notes').value.trim(),file=$('nc_photo').files[0];
- if(!name||!Number.isFinite(qty)||qty<=0)return alert('Ingresá el producto y una cantidad válida.');
- if(file&&(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880))return alert('La foto debe ser JPG, PNG o WebP y pesar menos de 5 MB.');
- const btn=$('nc_save');btn.disabled=true;btn.textContent='Guardando...';
- let path=null;
- try{
-  if(file){const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';path=me.id+'/'+crypto.randomUUID()+'.'+ext;
-   const u=await sb.storage.from('nonconforming-photos').upload(path,file,{contentType:file.type,upsert:false});if(u.error)throw u.error;}
-  const p=products.find(x=>x.name.toLowerCase()===name.toLowerCase());
-  const r=await sb.from('nonconforming_products').insert({shift_id:shift.id,employee_id:me.id,product_id:p?.id||null,product_name:name,quantity:qty,reason,notes,photo_path:path});
-  if(r.error)throw r.error;
-  alert('Aviso guardado ✓ No se descontó stock.');renderShift();
- }catch(e){alert('No se pudo guardar: '+(e.message||e));btn.disabled=false;btn.textContent='Guardar aviso';}
-}
-async function adminNonconforming(){
- if(me.role!=='manager')return;
- $('work').innerHTML='<div class="card"><h2>Productos no conformes</h2><p>Cargando registros...</p></div>';
- const r=await sb.from('nonconforming_products').select('*').order('created_at',{ascending:false}).limit(200);
- if(r.error){$('work').innerHTML='<div class="card">'+esc(r.error.message)+'</div>';return;}
- const rows=r.data||[],names={};
- const ids=[...new Set(rows.map(x=>x.employee_id))];
- if(ids.length){const q=await sb.from('profiles').select('id,full_name').in('id',ids);(q.data||[]).forEach(p=>names[p.id]=p.full_name);}
- const signed=await Promise.all(rows.map(async x=>x.photo_path?(await sb.storage.from('nonconforming-photos').createSignedUrl(x.photo_path,3600)).data?.signedUrl:null));
- $('work').innerHTML=`<div class="card"><h2>⚠️ Productos no conformes</h2>
- <p class="muted">Avisos registrados por las empleadas. No modifican el stock.</p>
- ${rows.length?rows.map((x,i)=>`<div class="item"><b>${esc(x.product_name)}</b> · ${Number(x.quantity).toLocaleString('es-AR')} unidades
- <div>${esc(x.reason)}${x.notes?' · '+esc(x.notes):''}</div>
- <div class="tiny">${esc(names[x.employee_id]||'Empleada')} · ${new Date(x.created_at).toLocaleString('es-AR')}</div>
- ${signed[i]?'<a href="'+esc(signed[i])+'" target="_blank" rel="noopener">📷 Ver foto</a>':''}</div>`).join(''):'<p>Todavía no hay avisos.</p>'}
- <button class="sec" onclick="adminHome()">Volver</button></div>`;
-}
 </script>
 
 <style>
@@ -265,7 +218,7 @@ margin:12px 0
 <body>
 
 <header class="top">
-<b>YPF TRES SOLES FULL</b>
+<b>YPF SANTA TERESITA FULL</b>
 <div id="hello" style="margin-top:5px;opacity:.9">Control de stock</div>
 </header>
 
@@ -2478,6 +2431,54 @@ console.error(e);
    ========================================== */
 
 boot();
+
+/* Productos no conformes: registro informativo, sin descontar stock. */
+function nonconformingForm(){
+ if(!shift?.id)return alert('Abrí un turno para registrar un producto.');
+ const choices=products.map(p=>'<option value="'+esc(p.name)+'"></option>').join('');
+ $('work').innerHTML=`<div class="card"><h2>⚠️ Productos no conformes</h2>
+ <p class="muted">Registrá productos rotos, vencidos o que salieron mal. Esto NO descuenta stock.</p>
+ <label>Producto</label><input id="nc_product" list="nc_options" placeholder="Nombre del producto"><datalist id="nc_options">${choices}</datalist>
+ <label>Cantidad</label><input id="nc_qty" type="number" min="0.5" step="any" placeholder="Ej.: 5">
+ <label>Motivo</label><select id="nc_reason" style="width:100%;padding:13px;border-radius:12px;border:1px solid #c9eafa">
+ <option>Roto</option><option>Mal preparado</option><option>Quemado</option><option>Vencido</option><option>Otro</option></select>
+ <label>Detalle (opcional)</label><textarea id="nc_notes" rows="3" style="width:100%;padding:12px;border-radius:12px" placeholder="Ej.: 5 sándwiches salieron torcidos"></textarea>
+ <label>Foto (opcional, hasta 5 MB)</label><input id="nc_photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+ <button id="nc_save" onclick="saveNonconforming()">Guardar aviso</button>
+ <button class="sec" onclick="renderShift()">Volver al turno</button></div>`;
+}
+async function saveNonconforming(){
+ const name=$('nc_product').value.trim(),qty=Number($('nc_qty').value),reason=$('nc_reason').value,notes=$('nc_notes').value.trim(),file=$('nc_photo').files[0];
+ if(!name||!Number.isFinite(qty)||qty<=0)return alert('Ingresá el producto y una cantidad válida.');
+ if(file&&(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880))return alert('La foto debe ser JPG, PNG o WebP y pesar menos de 5 MB.');
+ const btn=$('nc_save');btn.disabled=true;btn.textContent='Guardando...';
+ let path=null;
+ try{
+  if(file){const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';path=me.id+'/'+crypto.randomUUID()+'.'+ext;
+   const u=await sb.storage.from('nonconforming-photos').upload(path,file,{contentType:file.type,upsert:false});if(u.error)throw u.error;}
+  const p=products.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  const r=await sb.from('nonconforming_products').insert({shift_id:shift.id,employee_id:me.id,product_id:p?.id||null,product_name:name,quantity:qty,reason,notes,photo_path:path});
+  if(r.error)throw r.error;
+  alert('Aviso guardado ✓ No se descontó stock.');renderShift();
+ }catch(e){alert('No se pudo guardar: '+(e.message||e));btn.disabled=false;btn.textContent='Guardar aviso';}
+}
+async function adminNonconforming(){
+ if(me.role!=='manager')return;
+ $('work').innerHTML='<div class="card"><h2>Productos no conformes</h2><p>Cargando registros...</p></div>';
+ const r=await sb.from('nonconforming_products').select('*').order('created_at',{ascending:false}).limit(200);
+ if(r.error){$('work').innerHTML='<div class="card">'+esc(r.error.message)+'</div>';return;}
+ const rows=r.data||[],names={};
+ const ids=[...new Set(rows.map(x=>x.employee_id))];
+ if(ids.length){const q=await sb.from('profiles').select('id,full_name').in('id',ids);(q.data||[]).forEach(p=>names[p.id]=p.full_name);}
+ const signed=await Promise.all(rows.map(async x=>x.photo_path?(await sb.storage.from('nonconforming-photos').createSignedUrl(x.photo_path,3600)).data?.signedUrl:null));
+ $('work').innerHTML=`<div class="card"><h2>⚠️ Productos no conformes</h2>
+ <p class="muted">Avisos registrados por las empleadas. No modifican el stock.</p>
+ ${rows.length?rows.map((x,i)=>`<div class="item"><b>${esc(x.product_name)}</b> · ${Number(x.quantity).toLocaleString('es-AR')} unidades
+ <div>${esc(x.reason)}${x.notes?' · '+esc(x.notes):''}</div>
+ <div class="tiny">${esc(names[x.employee_id]||'Empleada')} · ${new Date(x.created_at).toLocaleString('es-AR')}</div>
+ ${signed[i]?'<a href="'+esc(signed[i])+'" target="_blank" rel="noopener">📷 Ver foto</a>':''}</div>`).join(''):'<p>Todavía no hay avisos.</p>'}
+ <button class="sec" onclick="adminHome()">Volver</button></div>`;
+}
 
 </script>
 
