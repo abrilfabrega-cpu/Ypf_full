@@ -8,7 +8,7 @@
 
 <title>YPF SANTA TERESITA FULL</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'">
 </script>
 
 <style>
@@ -241,6 +241,7 @@ margin:12px 0
 
 <script>
 
+if(!window.supabase){document.getElementById('msg').textContent='No se pudo cargar la conexión de la aplicación. Comprobá Internet y volvé a abrirla.';throw new Error('Supabase SDK no disponible');}
 const sb=supabase.createClient(
 'https://sblkngrblimfhhkqilop.supabase.co',
 'sb_publishable_CipXByoTnXEwjcYMXN3Btg_zyI104nD'
