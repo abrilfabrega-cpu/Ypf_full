@@ -228,7 +228,7 @@ margin:12px 0
 <h2>Ingresar</h2>
 <input id="email" type="email" placeholder="Email">
 <input id="pass" type="password" placeholder="Contraseña">
-<button onclick="login()">Ingresar</button>
+<button id="loginButton" type="button" onclick="login()">Ingresar</button>
 <p id="msg" class="muted">Cada persona ingresa con su propia cuenta.</p>
 </section>
 
@@ -269,19 +269,36 @@ m=>({
 
 const fmt=n=>Number(n||0).toLocaleString('es-AR');
 
+let loginInProgress=false;
 async function login(){
-
-const r=await sb.auth.signInWithPassword({
-email:$('email').value,
-password:$('pass').value
-});
-
-if(r.error){
-$('msg').textContent=r.error.message;
-return;
-}
-
-boot();
+ const msg=$('msg'),button=document.getElementById('loginButton');
+ if(loginInProgress)return;
+ const email=$('email').value.trim(),password=$('pass').value;
+ if(!email||!password){msg.textContent='Ingresá tu correo y contraseña.';return;}
+ loginInProgress=true;
+ if(button){button.disabled=true;button.textContent='Ingresando…';}
+ msg.textContent='Verificando tu cuenta…';
+ try{
+  if(!window.supabase||!sb?.auth)throw new Error('No se cargó la conexión. Cerrá y volvé a abrir la aplicación.');
+  const result=await Promise.race([
+   sb.auth.signInWithPassword({email,password}),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('La conexión tardó demasiado. Revisá Internet y volvé a intentar.')),15000))
+  ]);
+  if(result.error)throw result.error;
+  msg.textContent='Acceso correcto. Cargando tu turno…';
+  await Promise.race([
+   boot(),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Se inició sesión, pero la carga tardó demasiado. Cerrá y volvé a abrir la aplicación.')),20000))
+  ]);
+  if(!$('auth').classList.contains('hide'))throw new Error('No se pudo abrir tu perfil. Avisá a la encargada.');
+ }catch(e){
+  console.error('Error al ingresar',e);
+  const message=String(e?.message||e);
+  msg.textContent=/Invalid login credentials/i.test(message)?'El correo o la contraseña no coinciden. Revisalos e intentá nuevamente.': 'No se pudo ingresar: '+message;
+ }finally{
+  loginInProgress=false;
+  if(button){button.disabled=false;button.textContent='Ingresar';}
+ }
 }
 
 async function logout(){
@@ -2432,7 +2449,7 @@ console.error(e);
    INICIO
    ========================================== */
 
-boot();
+boot().catch(e=>{console.error('Error al recuperar sesión',e);const msg=document.getElementById('msg');if(msg)msg.textContent='No se pudo recuperar la sesión. Podés intentar ingresar nuevamente.';});
 
 /* Productos no conformes: registro informativo, sin descontar stock. */
 function nonconformingForm(){
