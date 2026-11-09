@@ -2486,7 +2486,7 @@ async function adminNonconforming(){
 function milkQuantityHTML(){
  return products.filter(p=>['leche entera','leche descremada','leche de almendras'].includes(String(p.name).trim().toLowerCase())).map(p=>{
  const used=Number(shiftUsage[p.id]||0);
- return `<div class="prod stockrow"><div><b>${esc(p.name)}</b><div class="tiny">Registradas en este turno: <b>${fmt(used)}</b> cajas</div><div class="tiny">Stock: ${fmt(p.stock_qty)} cajas</div></div><div><input id="milk_qty_${p.id}" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 0,5" value="${used}" style="width:110px" aria-label="Cantidad de ${esc(p.name)}"><button class="red" id="milk_save_${p.id}" onclick="saveMilkQuantity('${p.id}')">Descontar</button></div></div>`;
+ return `<div class="prod stockrow"><div><b>${esc(p.name)}</b><div class="tiny">Registradas en este turno: <b>${fmt(used)}</b> cajas</div><div class="tiny">Stock: ${fmt(p.stock_qty)} cajas</div></div><div><input id="milk_qty_${p.id}" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 0,5" value="${used}" style="width:110px" aria-label="Cantidad de ${esc(p.name)}"><button class="sec" type="button" onclick="document.getElementById(\'milk_qty_${p.id}\').value=\'0.5\'">½ L</button><button class="red" id="milk_save_${p.id}" onclick="saveMilkQuantity(\'${p.id}\')">Guardar</button></div></div>`;
  }).join('');
 }
 async function saveMilkQuantity(id){
@@ -2494,7 +2494,7 @@ async function saveMilkQuantity(id){
  const p=products.find(x=>x.id===id);
  const field=$('milk_qty_'+id);
  if(!p||!field)return;
- const raw=field.value.trim().replace(',','.');
+ const raw=field.value.trim().replace(/\s/g,'').replace(',','.');
  const qty=Number(raw);
  if(!raw||!Number.isFinite(qty)||qty<0||Math.abs(qty*2-Math.round(qty*2))>0.000001){alert('Ingresá una cantidad válida: 0, 0,5, 1, 1,5, etc.');return;}
  const old=Number(shiftUsage[id]||0),difference=qty-old;
