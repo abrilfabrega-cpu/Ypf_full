@@ -2108,7 +2108,7 @@ ${preparedText}
 
 <h3>Stock consumido</h3>
 
-${Object.entries(totals)
+${Object.entries(totals).filter(([n])=>!["leche entera","leche descremada","leche de almendras"].includes(n.trim().toLowerCase()))
 
 .map(([n,v])=>`
 
@@ -2126,29 +2126,11 @@ ${esc(n)}:
 
 '<p class="muted">Sin descuentos.</p>'}
 
-<h3>Leches</h3>
-
-<p>
-
-Entera:
-
-<b>
-${fmt(
-mr.data?.whole_boxes
-)}
-</b>
-
-·
-
-Descremada:
-
-<b>
-${fmt(
-mr.data?.skim_boxes
-)}
-</b>
-
-</p>
+<h3>Leches utilizadas</h3>
+<div class="item">Entera: <b>${fmt(totals["Leche entera"]||0)} L</b></div>
+<div class="item">Descremada: <b>${fmt(totals["Leche descremada"]||0)} L</b></div>
+<div class="item">Almendras: <b>${fmt(totals["Leche de almendras"]||0)} L</b></div>
+<p class="muted">Según movimientos registrados al cerrar el turno. No genera descuentos adicionales.</p>
 
 <h3>Sobrante de caja</h3>
 
