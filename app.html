@@ -934,7 +934,7 @@ ${employeeStock()}
 
 ${preparedHTML()}
 
-<h3>Leches utilizadas</h3>\n<p class="muted">Ingresá el total de cajas utilizadas en este turno, en pasos de 0,5. Confirmá el registro. El stock se descuenta al cerrar el turno.</p>\n${milkQuantityHTML()}\n\n<h3>Sobrante de caja</h3>
+<h3>Leches utilizadas</h3>\n<p class="muted">Ingresá el consumo total de cada leche en este turno (por ejemplo 0,5 o 1,5). Podés escribir coma o punto. No redondees sachets abiertos a llenos o vacíos. El stock se descuenta al cerrar el turno.</p>\n${milkQuantityHTML()}\n\n<h3>Sobrante de caja</h3>
 
 <input
 id="cashSurplus"
@@ -2504,7 +2504,7 @@ async function adminNonconforming(){
 function milkQuantityHTML(){
  return products.filter(p=>['leche entera','leche descremada','leche de almendras'].includes(String(p.name).trim().toLowerCase())).map(p=>{
  const used=Number(shiftUsage[p.id]||0);
- return `<div class="prod stockrow"><div><b>${esc(p.name)}</b><div class="tiny">Registradas en este turno: <b>${fmt(used)}</b> cajas</div><div class="tiny">Stock: ${fmt(p.stock_qty)} cajas</div></div><div><input id="milk_qty_${p.id}" type="number" min="0" step="0.5" inputmode="decimal" value="${used}" style="width:110px" aria-label="Cantidad de ${esc(p.name)}"><button class="red" id="milk_save_${p.id}" onclick="saveMilkQuantity('${p.id}')">Descontar</button></div></div>`;
+ return `<div class="prod stockrow"><div><b>${esc(p.name)}</b><div class="tiny">Registradas en este turno: <b>${fmt(used)}</b> cajas</div><div class="tiny">Stock: ${fmt(p.stock_qty)} cajas</div></div><div><input id="milk_qty_${p.id}" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 0,5" value="${used}" style="width:110px" aria-label="Cantidad de ${esc(p.name)}"><button class="red" id="milk_save_${p.id}" onclick="saveMilkQuantity('${p.id}')">Descontar</button></div></div>`;
  }).join('');
 }
 async function saveMilkQuantity(id){
