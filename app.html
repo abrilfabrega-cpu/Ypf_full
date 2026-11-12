@@ -2479,19 +2479,44 @@ function nonconformingForm(){
  <label>Motivo</label><select id="nc_reason" style="width:100%;padding:13px;border-radius:12px;border:1px solid #c9eafa">
  <option>Roto</option><option>Mal preparado</option><option>Quemado</option><option>Vencido</option><option>Otro</option></select>
  <label>Detalle (opcional)</label><textarea id="nc_notes" rows="3" style="width:100%;padding:12px;border-radius:12px" placeholder="Ej.: 5 sándwiches salieron torcidos"></textarea>
- <label>Foto (opcional, hasta 5 MB)</label><input id="nc_photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+ <label>Foto (opcional)</label><input id="nc_photo" type="file" accept="image/*"><p class="muted">Podés elegir una foto de la galería o tomar una nueva. La app intentará optimizarla automáticamente.</p>
  <button id="nc_save" onclick="saveNonconforming()">Guardar aviso</button>
  <button class="sec" onclick="renderShift()">Volver al turno</button></div>`;
+}
+async function prepareNonconformingPhoto(file){
+ if(!file)return null;
+ if(file.size<=5242880&&['image/jpeg','image/png','image/webp'].includes(file.type))return file;
+ let bitmap;
+ try{
+  if(typeof createImageBitmap==='function')bitmap=await createImageBitmap(file);
+  else throw new Error('no bitmap');
+ }catch(e){
+  bitmap=await new Promise((resolve,reject)=>{
+   const url=URL.createObjectURL(file),img=new Image();
+   img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
+   img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('No se pudo leer esta foto. Probá seleccionarla desde Fotos en formato compatible.'))};
+   img.src=url;
+  });
+ }
+ const max=1600,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+ const canvas=document.createElement('canvas');
+ canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+ const ctx=canvas.getContext('2d');if(!ctx)throw new Error('No se pudo preparar la foto');
+ ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+ if(typeof bitmap.close==='function')bitmap.close();
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.78));
+ if(!blob||blob.size>5242880)throw new Error('No se pudo reducir la foto. Elegí una imagen más pequeña.');
+ return new File([blob],'producto-no-conforme.jpg',{type:'image/jpeg'});
 }
 async function saveNonconforming(){
  const name=$('nc_product').value.trim(),qty=Number($('nc_qty').value),reason=$('nc_reason').value,notes=$('nc_notes').value.trim(),file=$('nc_photo').files[0];
  if(!name||!Number.isFinite(qty)||qty<=0)return alert('Ingresá el producto y una cantidad válida.');
- if(file&&(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880))return alert('La foto debe ser JPG, PNG o WebP y pesar menos de 5 MB.');
+ 
  const btn=$('nc_save');btn.disabled=true;btn.textContent='Guardando...';
  let path=null;
  try{
-  if(file){const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';path=me.id+'/'+crypto.randomUUID()+'.'+ext;
-   const u=await sb.storage.from('nonconforming-photos').upload(path,file,{contentType:file.type,upsert:false});if(u.error)throw u.error;}
+  if(file){btn.textContent='Preparando foto...';const photo=await prepareNonconformingPhoto(file);const ext=photo.type==='image/png'?'png':photo.type==='image/webp'?'webp':'jpg';path=me.id+'/'+crypto.randomUUID()+'.'+ext;btn.textContent='Subiendo foto...';
+   const u=await sb.storage.from('nonconforming-photos').upload(path,photo,{contentType:photo.type,upsert:false});if(u.error)throw u.error;}
   const p=products.find(x=>x.name.toLowerCase()===name.toLowerCase());
   const r=await sb.from('nonconforming_products').insert({shift_id:shift.id,employee_id:me.id,product_id:p?.id||null,product_name:name,quantity:qty,reason,notes,photo_path:path});
   if(r.error)throw r.error;
