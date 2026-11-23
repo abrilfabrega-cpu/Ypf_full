@@ -1266,7 +1266,8 @@ $('work').innerHTML=`
 
 <div class="card">
 
-<h2>Administración</h2>\n\n<button class="sec" onclick="adminNonconforming()">⚠️ Productos no conformes</button>
+<h2>Administración</h2>
+<button class="sec" onclick="adminMedialunaDiscards()">🌙 Medialunas descartadas</button>\n\n<button class="sec" onclick="adminNonconforming()">⚠️ Productos no conformes</button>
 
 <button onclick="window.top.location.href=&#39;/stock-audit.html&#39;">📋 Auditoría de stock e historial</button>
 
@@ -2573,6 +2574,17 @@ async function aliasDelete(id){
  const r=await sb.from('checkout_aliases').delete().eq('id',id);if(r.error)return alert(r.error.message);await checkoutAliases();
 }
 
+
+async function adminMedialunaDiscards(){
+ if(me?.role!=='manager')return;
+ const w=$('work');w.innerHTML='<div class="card"><h2>🌙 Medialunas descartadas</h2><p>Cargando registros…</p></div>';
+ const since=new Date(Date.now()-30*86400000).toISOString();
+ const r=await sb.from('prepared_shift_counts').select('discarded_qty,closing_qty,sold_qty,shifts!inner(closed_at,kind,status,employee_id),prepared_products!inner(name)').gt('discarded_qty',0).gte('shifts.closed_at',since).eq('shifts.status','closed').order('updated_at',{ascending:false}).limit(150);
+ if(r.error){w.innerHTML='<div class="card"><h2>Medialunas descartadas</h2><p>'+esc(r.error.message)+'</p><button onclick="adminHome()">Volver</button></div>';return}
+ const rows=(r.data||[]).filter(x=>/medialuna/i.test(x.prepared_products?.name||''));
+ const total=rows.reduce((n,x)=>n+Number(x.discarded_qty||0),0);
+ w.innerHTML='<div class="card"><h2>🌙 Medialunas descartadas</h2><h3>'+fmt(total)+' medialunas tiradas en los últimos 30 días</h3><p class="muted">No se contabilizan como ventas. Se registran al cerrar el turno tarde.</p>'+ (rows.length?rows.map(x=>'<div class="item"><b>'+fmt(x.discarded_qty)+' descartadas</b><div class="tiny">'+new Date(x.shifts.closed_at).toLocaleString('es-AR')+'</div></div>').join(''):'<p class="muted">Todavía no hay descartes confirmados.</p>')+'<button class="sec" onclick="adminHome()">Volver</button></div>';
+}
 </script>
 
 </body>
