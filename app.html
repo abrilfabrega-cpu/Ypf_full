@@ -430,6 +430,8 @@ Turnos
 :''
 }`}
 
+<button class="sec" onclick="checkoutAliases()">🧾 ¿Cómo lo cobro?</button>
+
 <button class="ghost" onclick="logout()">
 Cerrar sesión
 </button>
@@ -2510,6 +2512,61 @@ async function saveMilkQuantity(id){
  }catch(e){alert('No se pudo guardar: '+(e.message||e));if(btn)btn.disabled=false;}
  finally{changingUsage=false;}
 }
+
+/* Catálogo independiente de equivalencias para caja; no afecta stock ni turnos. */
+let aliasItems=[],aliasQuery='',aliasEditing=null;
+function aliasEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function checkoutAliases(){
+ const w=document.getElementById('work');w.innerHTML='<div class="card"><h2>🧾 ¿Cómo lo cobro?</h2><p>Cargando productos…</p></div>';
+ const r=await sb.from('checkout_aliases').select('*').order('real_name');
+ if(r.error){w.innerHTML='<div class="card"><h2>No se pudo cargar la lista</h2><p>'+aliasEsc(r.error.message)+'</p><button onclick="checkoutAliases()">Reintentar</button><button class="sec" onclick="'+(me.role==='manager'?'adminHome':'employeeHome')+'()">Volver</button></div>';return}
+ aliasItems=r.data||[];aliasRender();
+}
+function aliasPhoto(path){
+ if(!path)return '<div style="width:74px;height:74px;flex:none;background:#edf5fa;border-radius:12px;display:grid;place-items:center;font-size:25px">📦</div>';
+ const url=sb.storage.from('checkout-alias-photos').getPublicUrl(path).data.publicUrl;
+ return '<img src="'+aliasEsc(url)+'" alt="Foto del producto" style="width:74px;height:74px;object-fit:contain;background:#f4f7fa;border-radius:12px;flex:none">';
+}
+function aliasRender(){
+ const manager=me.role==='manager';
+ const filtered=aliasItems.filter(x=>(manager||x.active)&&[x.real_name,x.system_name,x.system_code,x.notes].join(' ').toLocaleLowerCase().includes(aliasQuery.toLocaleLowerCase()));
+ document.getElementById('work').innerHTML='<div class="card"><h2>🧾 ¿Cómo lo cobro?</h2><p class="muted">Buscá el producto que lleva el cliente y mirá cómo cobrarlo en el sistema de caja.</p><input id="aliasSearch" placeholder="Buscar producto, marca o código" value="'+aliasEsc(aliasQuery)+'" oninput="aliasQuery=this.value;aliasFilter()" />'+(manager?'<button onclick="aliasEdit()">+ Agregar equivalencia</button>':'')+'<div id="aliasResults"></div><button class="ghost" onclick="'+(manager?'adminHome':'employeeHome')+'()">Volver</button></div>';
+ aliasFilter();
+}
+function aliasFilter(){
+ const container=document.getElementById('aliasResults');if(!container)return;
+ const manager=me.role==='manager';
+ const filtered=aliasItems.filter(x=>(manager||x.active)&&[x.real_name,x.system_name,x.system_code,x.notes].join(' ').toLocaleLowerCase().includes(aliasQuery.toLocaleLowerCase()));
+ container.innerHTML=filtered.length?filtered.map(x=>'<div class="card" style="border:1px solid #d8eaf3;margin:12px 0"><div style="display:flex;align-items:center;gap:12px">'+aliasPhoto(x.real_photo)+'<div><small>PRODUCTO QUE LLEVA EL CLIENTE</small><h3 style="margin:5px 0">'+aliasEsc(x.real_name)+'</h3></div></div><div style="text-align:center;font-weight:800;color:#228fbe;margin:12px">↓ COBRAR COMO ↓</div><div style="display:flex;align-items:center;gap:12px">'+aliasPhoto(x.system_photo)+'<div><b>'+aliasEsc(x.system_name)+'</b><div style="font-size:19px;font-weight:800">Código: '+aliasEsc(x.system_code)+'</div></div></div>'+(x.notes?'<p>'+aliasEsc(x.notes)+'</p>':'')+(manager?'<button class="sec" onclick="aliasEdit(\''+x.id+'\')">Editar</button><button class="ghost" onclick="aliasDelete(\''+x.id+'\')">Eliminar</button>':'')+'</div>').join(''):'<p class="muted">No hay productos que coincidan. '+(manager?'Agregá la primera equivalencia.':'Consultá con administración.')+'</p>';
+}
+function aliasEdit(id){
+ if(me.role!=='manager')return;
+ aliasEditing=id||null;const x=aliasItems.find(y=>y.id===id)||{};
+ document.getElementById('work').innerHTML='<div class="card"><h2>'+(id?'Editar':'Nueva')+' equivalencia</h2><label>Producto real (el que lleva el cliente)</label><input id="aliasReal" value="'+aliasEsc(x.real_name||'')+'" placeholder="Ej.: Tibix"><label>Nombre exacto en el sistema de caja</label><input id="aliasSystem" value="'+aliasEsc(x.system_name||'')+'" placeholder="Ej.: Alfajor Block"><label>Código del sistema</label><input id="aliasCode" value="'+aliasEsc(x.system_code||'')+'" placeholder="Ej.: 1234" inputmode="numeric"><label>Foto del producto real (opcional)</label><input type="file" accept="image/*" id="aliasRealFile">'+(x.real_photo?aliasPhoto(x.real_photo):'')+'<label>Foto del producto en el sistema (opcional)</label><input type="file" accept="image/*" id="aliasSystemFile">'+(x.system_photo?aliasPhoto(x.system_photo):'')+'<label>Observaciones (opcional)</label><textarea id="aliasNotes" rows="3">'+aliasEsc(x.notes||'')+'</textarea><button id="aliasSaveBtn" onclick="aliasSave()">Guardar equivalencia</button><button class="ghost" onclick="aliasRender()">Cancelar</button></div>';
+}
+async function aliasUpload(input,oldPath){
+ const f=document.getElementById(input).files[0];if(!f)return oldPath||null;
+ const img=await new Promise((resolve,reject)=>{const image=new Image();const url=URL.createObjectURL(f);image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('No se pudo leer la foto. Probá con una imagen JPG.'))};image.src=url});
+ const scale=Math.min(1,1400/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.8));if(!blob)throw new Error('No se pudo preparar la foto');
+ const path=me.id+'/'+crypto.randomUUID()+'.jpg';const r=await sb.storage.from('checkout-alias-photos').upload(path,blob,{contentType:'image/jpeg'});if(r.error)throw r.error;return path;
+}
+async function aliasSave(){
+ if(me.role!=='manager')return;
+ const real=document.getElementById('aliasReal').value.trim(),system=document.getElementById('aliasSystem').value.trim(),code=document.getElementById('aliasCode').value.trim(),notes=document.getElementById('aliasNotes').value.trim();
+ if(!real||!system||!code)return alert('Completá el producto real, el nombre en el sistema y su código.');
+ const btn=document.getElementById('aliasSaveBtn');btn.disabled=true;btn.textContent='Guardando…';
+ try{const old=aliasItems.find(x=>x.id===aliasEditing)||{};const real_photo=await aliasUpload('aliasRealFile',old.real_photo),system_photo=await aliasUpload('aliasSystemFile',old.system_photo);
+ const payload={real_name:real,system_name:system,system_code:code,notes,real_photo,system_photo,updated_at:new Date().toISOString()};
+ const r=aliasEditing?await sb.from('checkout_aliases').update(payload).eq('id',aliasEditing):await sb.from('checkout_aliases').insert(payload);
+ if(r.error)throw r.error;aliasQuery='';await checkoutAliases();
+ }catch(e){alert('No se pudo guardar: '+e.message);btn.disabled=false;btn.textContent='Guardar equivalencia';}
+}
+async function aliasDelete(id){
+ if(me.role!=='manager'||!confirm('¿Eliminar esta equivalencia?'))return;
+ const r=await sb.from('checkout_aliases').delete().eq('id',id);if(r.error)return alert(r.error.message);await checkoutAliases();
+}
+
 </script>
 
 </body>
