@@ -754,7 +754,7 @@ oninput="updatePreparedCalculation('${p.id}')"
 >
 
 <div class="calc" id="prep_calc_${p.id}">Vendidas: —</div>
-${shift?.kind==='afternoon'&&/medialuna/i.test(p.name)?`<div class="okbox"><b>🌙 Descarte de cierre del día</b><p>Las medialunas sobrantes se tiran. No son ventas. Mañana comienza con 0.</p><label><input id="prep_discard_${p.id}" type="checkbox" style="width:24px;height:24px"> Confirmo que se tiran todas las medialunas que quedan.</label></div>`:''}
+${shift?.kind==='afternoon'&&/medialuna|semita/i.test(p.name)?`<div class="okbox"><b>🌙 Descarte de cierre del día</b><p>Los elaborados sobrantes se tiran. No son ventas. Mañana comienza con 0.</p><label><input id="prep_discard_${p.id}" type="checkbox" style="width:24px;height:24px"> Confirmo que se tira todo lo que queda de este producto.</label></div>`:''}
 
 <button
 class="sec"
@@ -797,7 +797,7 @@ box.textContent='Revisá las cantidades';
 return;
 }
 
-box.textContent='Vendidas: '+fmt(sold)+(shift?.kind==='afternoon'&&/medialuna/i.test(preparedProducts.find(p=>p.id===id)?.name||'')?' · Se tiran: '+fmt(closing)+' · Mañana: 0':'');
+box.textContent='Vendidas: '+fmt(sold)+(shift?.kind==='afternoon'&&/medialuna|semita/i.test(preparedProducts.find(p=>p.id===id)?.name||'')?' · Se tiran: '+fmt(closing)+' · Mañana: 0':'');
 }
 
 async function loadPreparedCounts(){
@@ -840,7 +840,7 @@ const check=$('prep_discard_'+x.prepared_product_id);if(check)check.checked=x.di
 updatePreparedCalculation(x.prepared_product_id);
 });
 const existing=new Set((r.data||[]).map(x=>x.prepared_product_id));
-for(const p of preparedProducts.filter(p=>/medialuna/i.test(p.name)&&!existing.has(p.id))){
+for(const p of preparedProducts.filter(p=>/medialuna|semita/i.test(p.name)&&!existing.has(p.id))){
  const input=$('prep_open_'+p.id);if(!input)continue;
  if(shift.kind==='morning'){input.value=0;continue;}
  const prev=await sb.from('prepared_shift_counts').select('closing_qty,discarded_qty,shifts!inner(opened_at,status)').eq('prepared_product_id',p.id).eq('shifts.status','closed').lt('shifts.opened_at',shift.opened_at).order('updated_at',{ascending:false}).limit(1);
@@ -999,7 +999,7 @@ throw new Error(
 const opening=Number(a.value||0);
 const made=Number(b.value||0);
 const closing=Number(c.value);
-const discardCheck=$('prep_discard_'+p.id);if(discardCheck&&!discardCheck.checked)throw new Error('Confirmá el descarte de '+closing+' medialunas antes de cerrar.');const discarded=discardCheck?closing:0;
+const discardCheck=$('prep_discard_'+p.id);if(discardCheck&&!discardCheck.checked)throw new Error('Confirmá el descarte de '+closing+' unidades de '+p.name+' antes de cerrar.');const discarded=discardCheck?closing:0;
 
 if(opening+made-closing<0){
 
@@ -1100,7 +1100,7 @@ return `
 ${esc(p.name)}
 
 <b style="float:right">
-${fmt(a+b-c)} vendidas ${shift?.kind==='afternoon'&&/medialuna/i.test(p.name)?' · '+fmt(c)+' descartadas · 0 para mañana':''}
+${fmt(a+b-c)} vendidas ${shift?.kind==='afternoon'&&/medialuna|semita/i.test(p.name)?' · '+fmt(c)+' descartadas · 0 para mañana':''}
 </b>
 
 </div>
@@ -1267,7 +1267,7 @@ $('work').innerHTML=`
 <div class="card">
 
 <h2>Administración</h2>
-<button class="sec" onclick="adminMedialunaDiscards()">🌙 Medialunas descartadas</button>\n\n<button class="sec" onclick="adminNonconforming()">⚠️ Productos no conformes</button>
+<button class="sec" onclick="adminPreparedDiscards()">🌙 Elaborados descartados</button>\n\n<button class="sec" onclick="adminNonconforming()">⚠️ Productos no conformes</button>
 
 <button onclick="window.top.location.href=&#39;/stock-audit.html&#39;">📋 Auditoría de stock e historial</button>
 
@@ -2575,15 +2575,15 @@ async function aliasDelete(id){
 }
 
 
-async function adminMedialunaDiscards(){
+async function adminPreparedDiscards(){
  if(me?.role!=='manager')return;
- const w=$('work');w.innerHTML='<div class="card"><h2>🌙 Medialunas descartadas</h2><p>Cargando registros…</p></div>';
+ const w=$('work');w.innerHTML='<div class="card"><h2>🌙 Elaborados descartados</h2><p>Cargando registros…</p></div>';
  const since=new Date(Date.now()-30*86400000).toISOString();
  const r=await sb.from('prepared_shift_counts').select('discarded_qty,closing_qty,sold_qty,shifts!inner(closed_at,kind,status,employee_id),prepared_products!inner(name)').gt('discarded_qty',0).gte('shifts.closed_at',since).eq('shifts.status','closed').order('updated_at',{ascending:false}).limit(150);
- if(r.error){w.innerHTML='<div class="card"><h2>Medialunas descartadas</h2><p>'+esc(r.error.message)+'</p><button onclick="adminHome()">Volver</button></div>';return}
- const rows=(r.data||[]).filter(x=>/medialuna/i.test(x.prepared_products?.name||''));
+ if(r.error){w.innerHTML='<div class="card"><h2>Elaborados descartados</h2><p>'+esc(r.error.message)+'</p><button onclick="adminHome()">Volver</button></div>';return}
+ const rows=(r.data||[]).filter(x=>/medialuna|semita/i.test(x.prepared_products?.name||''));
  const total=rows.reduce((n,x)=>n+Number(x.discarded_qty||0),0);
- w.innerHTML='<div class="card"><h2>🌙 Medialunas descartadas</h2><h3>'+fmt(total)+' medialunas tiradas en los últimos 30 días</h3><p class="muted">No se contabilizan como ventas. Se registran al cerrar el turno tarde.</p>'+ (rows.length?rows.map(x=>'<div class="item"><b>'+fmt(x.discarded_qty)+' descartadas</b><div class="tiny">'+new Date(x.shifts.closed_at).toLocaleString('es-AR')+'</div></div>').join(''):'<p class="muted">Todavía no hay descartes confirmados.</p>')+'<button class="sec" onclick="adminHome()">Volver</button></div>';
+ w.innerHTML='<div class="card"><h2>🌙 Elaborados descartados</h2><h3>'+fmt(total)+' unidades descartadas en los últimos 30 días</h3><p class="muted">No se contabilizan como ventas. Se registran al cerrar el turno tarde.</p>'+ (rows.length?rows.map(x=>'<div class="item"><b>'+esc(x.prepared_products?.name||'Elaborado')+' · '+fmt(x.discarded_qty)+' descartadas</b><div class="tiny">'+new Date(x.shifts.closed_at).toLocaleString('es-AR')+'</div></div>').join(''):'<p class="muted">Todavía no hay descartes confirmados.</p>')+'<button class="sec" onclick="adminHome()">Volver</button></div>';
 }
 </script>
 
